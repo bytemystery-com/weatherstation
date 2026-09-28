@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-remote",
+            "type": "shell",
+            "dependsOn": "stop-remote-debug",
+            "dependsOrder": "sequence",
+            "command": "sshpass",
+            "args": [
+                "-p",
+                "psyst",
+                "ssh",
+                "psyst@192.168.0.177",
+                "cd /home/psyst/goweather && go build -gcflags=\"all=-N -l\" ."
+            ],
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "debug-remote",
+            "type": "shell",
+            "dependsOn": "build-remote",
+            "dependsOrder": "sequence",
+            "command": "sshpass",
+            "args": [
+                "-p",
+                "psyst",
+                "ssh",
+                "psyst@192.168.0.177",
+                "/home/psyst/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec /home/psyst/goweather/weatherd"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "."
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "API server listening at",
+                    "endsPattern": ".*"
+                }
+            }
+        },
+        {
+            "label": "stop-remote-debug",
+            "type": "shell",
+            "command": "sshpass",
+            "args": [
+                "-p",
+                "psyst",
+                "ssh",
+                "psyst@192.168.0.177",
+                "pkill -x dlv || true"
+            ],
+             "problemMatcher": []
+        }
+    ]
+}
