@@ -1,0 +1,8 @@
+/dist/
+/dist/linux/
+/dist/windows/
+/dist/android/
+/tmp/
+/build/
+__debug*
+weatherd

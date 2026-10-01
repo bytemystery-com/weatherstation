@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Weather Station - Config</title>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+		<meta charset="utf-8"/>
+		<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate"/>
+		<meta http-equiv="expires" content="0"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="weather.css"/>
+		<script src="config.js"></script>
+	</head>
+	<body onload="doLoad()">
+		<div class="siteframe">
+			<form class="status" name="cfg_form" id="cfg_form" action="setcfg" method="post" onsubmit="return doSetValues(this);">
+				<fieldset class="box status_box_config"><legend class="box_status" id="general_caption">General</legend>
+					<div class="cfg_table">
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Temperature filter constant<br/>[0.0 - 1.0]</span><span id="old_t_fc"></span><br/>
+									<input class="inputfield" type="number" id="t_fc" name="t_fc" step="0.001" min="0.0" max="1.0" list="t_fcs" value="0.2">
+									<datalist id="t_fcs">
+										<option value="0.1">
+										<option value="0.2">
+										<option value="0.3">
+										<option value="0.4">
+										<option value="0.5">
+										<option value="0.6">
+										<option value="0.7">
+										<option value="0.8">
+										<option value="0.9">
+										<option value="1.0">
+									</datalist>
+								</div>
+							</div>
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Temperature filter constant 2<br/>[0.0 - 1.0]</span><span id="old_t_fc2"></span><br/>
+									<input class="inputfield" type="number" id="t_fc2" name="t_fc2" step="0.0001" min="0.0" max="1.0" list="t_fcs2" value="0.001">
+									<datalist id="t_fcs2">
+										<option value="0.001">
+										<option value="0.002">
+										<option value="0.003">
+										<option value="0.004">
+										<option value="0.005">
+										<option value="0.006">
+										<option value="0.007">
+										<option value="0.008">
+										<option value="0.009">
+										<option value="0.01">
+									</datalist>
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Humidity filter constant<br/>[0.0 - 1.0]</span><span id="old_h_fc"></span><br/>
+									<input class="inputfield" type="number" id="h_fc" name="h_fc" step="0.001" min="0.0" max="1.0" list="h_fcs" value="0.2">
+									<datalist id="h_fcs">
+										<option value="0.1">
+										<option value="0.2">
+										<option value="0.3">
+										<option value="0.4">
+										<option value="0.5">
+										<option value="0.6">
+										<option value="0.7">
+										<option value="0.8">
+										<option value="0.9">
+										<option value="1.0">
+									</datalist>
+								</div>
+							</div>
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Humidity filter constant 2<br/>[0.0 - 1.0]</span><span id="old_h_fc2"></span><br/>
+									<input class="inputfield" type="number" id="h_fc2" name="h_fc2" step="0.001" min="0.0" max="1.0" list="h_fcs2" value="0.002">
+									<datalist id="h_fcs2">
+										<option value="0.001">
+										<option value="0.002">
+										<option value="0.003">
+										<option value="0.004">
+										<option value="0.005">
+										<option value="0.006">
+										<option value="0.007">
+										<option value="0.008">
+										<option value="0.009">
+										<option value="0.01">
+									</datalist>
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Dew point filter constant<br/>[0.0 - 1.0]</span><span id="old_d_fc"></span><br/>
+									<input class="inputfield" type="number" id="d_fc" name="d_fc" step="0.001" min="0.0" max="1.0" list="d_fcs" value="0.2">
+									<datalist id="d_fcs">
+										<option value="0.1">
+										<option value="0.2">
+										<option value="0.3">
+										<option value="0.4">
+										<option value="0.5">
+										<option value="0.6">
+										<option value="0.7">
+										<option value="0.8">
+										<option value="0.9">
+										<option value="1.0">
+									</datalist>
+								</div>
+							</div>
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Dew point filter constant 2<br/>[0.0 - 1.0]</span><span id="old_d_fc2"></span><br/>
+									<input class="inputfield" type="number" id="d_fc2" name="d_fc2" step="0.001" min="0.0" max="1.0" list="d_fcs2" value="0.002">
+									<datalist id="d_fcs2">
+										<option value="0.001">
+										<option value="0.002">
+										<option value="0.003">
+										<option value="0.004">
+										<option value="0.005">
+										<option value="0.006">
+										<option value="0.007">
+										<option value="0.008">
+										<option value="0.009">
+										<option value="0.01">
+									</datalist>
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Lux filter constant<br/>[0.0 - 1.0]</span><span id="old_l_fc"></span><br/>
+									<input class="inputfield" type="number" id="l_fc" name="l_fc" step="0.001" min="0.0" max="1.0" list="l_fcs" value="0.2">
+									<datalist id="l_fcs">
+										<option value="0.1">
+										<option value="0.2">
+										<option value="0.3">
+										<option value="0.4">
+										<option value="0.5">
+										<option value="0.6">
+										<option value="0.7">
+										<option value="0.8">
+										<option value="0.9">
+										<option value="1.0">
+									</datalist>
+								</div>
+							</div>
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Lux filter constant 2<br/>[0.0 - 1.0]</span><span id="old_l_fc2"></span><br/>
+									<input class="inputfield" type="number" id="l_fc2" name="l_fc2" step="0.001" min="0.0" max="1.0" list="l_fcs2" value="0.004">
+									<datalist id="l_fcs2">
+										<option value="0.001">
+										<option value="0.002">
+										<option value="0.003">
+										<option value="0.004">
+										<option value="0.005">
+										<option value="0.006">
+										<option value="0.007">
+										<option value="0.008">
+										<option value="0.009">
+										<option value="0.01">
+									</datalist>
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Pressure filter constant<br/>[0.0 - 1.0]</span><span id="old_p_fc"></span><br/>
+									<input class="inputfield" type="number" id="p_fc" name="p_fc" step="0.001" min="0.0" max="1.0" list="p_fcs" value="0.2">
+									<datalist id="p_fcs">
+										<option value="0.1">
+										<option value="0.2">
+										<option value="0.3">
+										<option value="0.4">
+										<option value="0.5">
+										<option value="0.6">
+										<option value="0.7">
+										<option value="0.8">
+										<option value="0.9">
+										<option value="1.0">
+									</datalist>
+								</div>
+							</div>
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Height above<br/>sea level [m]</span><span id="old_height"></span><br/>
+									<input class="inputfield" type="number" id="height" name="height" step="1" min="0.0" max="6000" list="heights" value="515">
+									<datalist id="heights">
+										<option value="0">
+										<option value="100">
+										<option value="200">
+										<option value="500">
+										<option value="515">
+										<option value="800">
+										<option value="836">
+										<option value="1000">
+										<option value="1200">
+										<option value="1500">
+										<option value="1800">
+										<option value="2000">
+										<option value="2500">
+										<option value="3000">
+										<option value="3500">
+										<option value="4000">
+									</datalist>
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Name</span><br/>
+									<input class="inputfield_text" type="text" id="name" name="name" maxlength="32" size="13">
+								</div>
+							</div>
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">DNS Name</span><br/>
+									<input class="inputfield_text" type="text" id="dns_name" name="dns_name" maxlength="32" size="13">
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">&nbsp;</span><br/>
+									<input class="inputcheck" type="checkbox" id="use_pass" name="use_pass" onclick="doPass()">Use password
+								</div>
+							</div>
+							
+							<div class="cfg_table_cell">
+								<div class="inputblock">
+									<span class="label">Password</span><br/>
+									<input class="inputfield_text" type="password" maxlength="30" size="13" id="pass" name="pass">
+								</div>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="break1">&nbsp;</div>
+					<input class="savebutton" type="submit" value="Save">
+				</fieldset>
+			</form>
+
+			<hr class="seperator"/>
+			<div class="footer">© 2018-2022 by Reiner Pröls, Germany • Schleißheimerstraße 131, 80797 München</div>
+			<div class="version" id="version"></div>
+		</div>
+	</body>
+</html>

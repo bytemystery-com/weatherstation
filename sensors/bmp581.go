@@ -2,6 +2,8 @@ package sensors
 
 import (
 	"fmt"
+	"log"
+	"sync/atomic"
 	"time"
 
 	"weatherd/i2c"
@@ -17,6 +19,7 @@ const (
 	BMP581_REG_OSR        = 0x36
 	BMP581_REG_ODR        = 0x37
 	BMP581_REG_CMD        = 0x7E
+	BMP581_REG_DATA       = 0x1D
 
 	BMP581_CMD_RESET = 0xB6
 
@@ -128,9 +131,17 @@ const (
 	bmp581States_measure
 )
 
+type bmp851ShmData struct {
+	temperature atomic.Int32  // temperature*100
+	pressure    atomic.Uint32 // druck*10
+}
+
 type Bmp581 struct {
-	dev   *i2c.I2cDevice
-	state bmp581States
+	dev          *i2c.I2cDevice
+	state        bmp581States
+	shm          bmp851ShmData
+	measureCycle time.Duration
+	waitDuration time.Duration
 }
 
 func NewBmp581(addr uint16, bus *i2c.I2c) *Bmp581 {
@@ -139,16 +150,28 @@ func NewBmp581(addr uint16, bus *i2c.I2c) *Bmp581 {
 		return nil
 	}
 	return &Bmp581{
-		dev:   dev,
-		state: bmp581States_init,
+		dev:          dev,
+		state:        bmp581States_init,
+		waitDuration: time.Duration(10 * time.Millisecond),
 	}
 }
 
-func (bmp *Bmp581) IsValidChipId(chipId uint8) bool {
+// Interface for web server
+func (bmp *Bmp581) GetData() (float32, float32) {
+	return float32(bmp.shm.temperature.Load() / 100), float32(bmp.shm.pressure.Load() / 10.0)
+}
+
+func (bmp *Bmp581) Start(measureCycle time.Duration) {
+	bmp.measureCycle = measureCycle
+	go bmp.loop()
+}
+
+// Implementation
+func (bmp *Bmp581) isValidChipId(chipId uint8) bool {
 	return chipId == BMP581_CHIPID
 }
 
-func (bmp *Bmp581) GetChipId() (uint8, error) {
+func (bmp *Bmp581) getChipId() (uint8, error) {
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
 	data[0].Data = []byte{BMP581_REG_CHIPID}
@@ -162,7 +185,7 @@ func (bmp *Bmp581) GetChipId() (uint8, error) {
 	return data[1].Data[0], nil
 }
 
-func (bmp *Bmp581) GetRevisionId() (uint8, error) {
+func (bmp *Bmp581) getRevisionId() (uint8, error) {
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
 	data[0].Data = []byte{BMP581_REG_REVISIONID}
@@ -176,7 +199,7 @@ func (bmp *Bmp581) GetRevisionId() (uint8, error) {
 	return data[1].Data[0], nil
 }
 
-func (bmp *Bmp581) IsStatusOk(status uint8) (bool, error) {
+func (bmp *Bmp581) isStatusOk(status uint8) (bool, error) {
 	status &= BMP581_STATUS_MASK
 	if (status & BMP581_STATUS_CORE_READY) == 0 {
 		return false, fmt.Errorf("Core not ready")
@@ -199,7 +222,7 @@ func (bmp *Bmp581) IsStatusOk(status uint8) (bool, error) {
 	return true, nil
 }
 
-func (bmp *Bmp581) GetStatus() (uint8, error) {
+func (bmp *Bmp581) getStatus() (uint8, error) {
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
 	data[0].Data = []byte{BMP581_REG_STATUS}
@@ -213,7 +236,7 @@ func (bmp *Bmp581) GetStatus() (uint8, error) {
 	return data[1].Data[0], nil
 }
 
-func (bmp *Bmp581) GetIrqStatus() (uint8, error) {
+func (bmp *Bmp581) getIrqStatus() (uint8, error) {
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
 	data[0].Data = []byte{BMP581_REG_IRQ_STATUS}
@@ -227,12 +250,12 @@ func (bmp *Bmp581) GetIrqStatus() (uint8, error) {
 	return data[1].Data[0], nil
 }
 
-func (bmp *Bmp581) reset() error {
-	id, err := bmp.GetChipId()
+func (bmp *Bmp581) init() error {
+	id, err := bmp.getChipId()
 	if err != nil {
 		return err
 	}
-	if !bmp.IsValidChipId(id) {
+	if !bmp.isValidChipId(id) {
 		return fmt.Errorf("Invalid chip id %d", id)
 	}
 
@@ -247,25 +270,25 @@ func (bmp *Bmp581) reset() error {
 
 	var iter int = 0
 	for {
-		time.Sleep(2 * time.Millisecond)
-		status, err := bmp.GetIrqStatus()
+		time.Sleep(bmp.waitDuration)
+		status, err := bmp.getIrqStatus()
 		if err != nil {
 			return err
 		}
 		if (status & BMP581_IRQ_STATUS_POR) != 0 {
 			break
 		}
-		if iter > 20 {
+		if iter > 50 {
 			return fmt.Errorf("Status ok timeout")
 		}
 		iter++
 	}
 
-	status, err := bmp.GetStatus()
+	status, err := bmp.getStatus()
 	if err != nil {
 		return err
 	}
-	ok, err := bmp.IsStatusOk(status)
+	ok, err := bmp.isStatusOk(status)
 	if ok {
 		return nil
 	}
@@ -316,52 +339,93 @@ func (bmp *Bmp581) measure() (float32, float32, error) {
 	// Mode
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
-	data[0].Data = []byte{
-		// Mode
-		BMP581_REG_ODR, BMP581_MODE_FORCED | BMP581_MODE_ODR_001,
-	}
+	data[0].Data = []byte{BMP581_REG_ODR}
+	data[1].Data = make([]byte, 1)
+
 	err := bmp.dev.Transfer(data)
 	if err != nil {
 		return 0, 0, err
 	}
+	data[1].Data[0] |= BMP581_MODE_FORCED
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return 0, 0, err
+	}
+
 	var counter int = 0
 	for {
-		status, err := bmp.GetIrqStatus()
-		err = bmp.dev.Transfer(data)
+		time.Sleep(bmp.waitDuration)
+		status, err := bmp.getIrqStatus()
 		if err != nil {
 			return 0, 0, err
 		}
 		if (status & BMP581_IRQ_STATUS_DATA_READY) != 0 {
+			break
 		}
 		if counter > 20 {
 			return 0, 0, fmt.Errorf("Measure timeout")
 		}
 		counter++
 	}
-	return 0, 0, nil
+
+	data = make([]i2c.I2cData, 2)
+	data[0].Mode = i2c.I2c_write
+	data[0].Data = []byte{BMP581_REG_DATA}
+	data[1].Data = make([]byte, 6)
+
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var tempRaw uint32 = uint32(data[1].Data[0]) + uint32(data[1].Data[1])<<8 + uint32(data[1].Data[2])<<16
+	var presRaw uint32 = uint32(data[1].Data[3]) + uint32(data[1].Data[4])<<8 + uint32(data[1].Data[5])<<16
+	temp := int32(tempRaw<<8) >> 8
+	pres := int32(presRaw<<8) >> 8
+	return float32(temp) / 0x10000, float32(pres) / 0x40, nil
 }
 
-func (bmp *Bmp581) Loop() {
-	time.Sleep(1000 * time.Millisecond)
-	switch bmp.state {
-	case bmp581States_init:
-		err := bmp.reset()
-		if err != nil {
-			return // ???
-		}
-		bmp.state = bmp581States_cfg
+func (bmp *Bmp581) loop() {
+	var start time.Time
+	var duration time.Duration
+	sleep := bmp.measureCycle
+	defaultSleep := time.Duration(1 * time.Millisecond)
+	for {
+		time.Sleep(sleep)
+		switch bmp.state {
+		case bmp581States_init:
+			err := bmp.init()
+			if err != nil {
+				log.Printf("BMP581 init failed with %v", err)
+			}
+			bmp.state = bmp581States_cfg
+			sleep = defaultSleep
 
-	case bmp581States_cfg:
-		err := bmp.configure()
-		if err != nil {
-			return // ???
-		}
-		bmp.state = bmp581States_measure
+		case bmp581States_cfg:
+			err := bmp.configure()
+			if err != nil {
+				bmp.state = bmp581States_init
+				log.Printf("BMP581 configure failed with %v", err)
+			}
+			bmp.state = bmp581States_measure
+			sleep = defaultSleep
 
-	case bmp581States_measure:
-		err := bmp.measure()
-		if err != nil {
-			return // ???
+		case bmp581States_measure:
+			start = time.Now()
+			temp, pressure, err := bmp.measure()
+			if err != nil {
+				bmp.state = bmp581States_init
+				log.Printf("BMP581 measure failed with %v", err)
+			}
+			bmp.shm.temperature.Store(int32(temp * 100))
+			bmp.shm.pressure.Store(uint32(pressure * 10))
+			duration = time.Since(start)
+			if duration < bmp.measureCycle {
+				sleep = bmp.measureCycle - duration
+			} else {
+				log.Printf("BMP581 measure tooks too long %d nsec", duration)
+				sleep = bmp.measureCycle
+			}
 		}
 	}
 }

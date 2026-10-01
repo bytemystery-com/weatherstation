@@ -1,0 +1,253 @@
+
+@import "reset.css";
+@import "graph.css";
+@import "graph_weather.css";
+
+body
+{
+	background-color: rgb(230, 230, 230);
+	font-size: 100%;
+	min-width: 370px;
+	user-select: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+}
+
+legend
+{
+	font-weight: bold;
+}
+
+.siteframe
+{
+	width: 94%;
+	margin: 0 auto;
+	overflow: hidden;
+}
+
+.status
+{
+	display: table-cell;
+}
+
+.box
+{
+	display: inline-block;
+	/* border: 2px groove ThreeDFace rgb(247, 242, 232);*/
+
+	background-color: rgb(225, 225, 225);
+	border: 1px solid;
+	border-top-color: rgb(250, 250, 250);
+	border-left-color: rgb(255, 255, 255);
+	border-right-color: rgb(127, 127, 127);
+	border-bottom-color: rgb(127, 127, 127);
+	border-width: 1px;
+	border-radius: 7px;
+	padding: 6px 10px 12px 15px;
+	margin: 10px 0px 10px 0px;
+    box-shadow: 5px 5px 7px rgb(180, 180, 180);
+}
+
+.config_box
+{
+	float: left;
+}
+
+.box::after
+{
+	content: ".";
+	display: block;
+	height: 0;
+	clear: both;
+	visibility: hidden;
+}
+
+.status_box
+{
+	float: left;
+	height: 13em;
+	margin-right: 10px;
+}
+
+.status_box_summary
+{
+	float: left;
+	/* height: 29.0em; */
+	margin-right: 10px;
+}
+
+.box_status
+{
+	color: rgb(0, 0, 0);
+}
+
+.box_date
+{
+	width: 20.5em;
+}
+
+.block_update
+{
+	float: left;
+	padding-top: 20px;
+	padding-bottom: 10px;
+	padding-left: 5px;
+	padding-right: 10px;
+}
+
+.block_status
+{
+	float: left;
+	margin-right: 50px;
+	width: 17.5em;
+	margin-top: 0.2em;
+}
+
+.status_table
+{
+	border-collapse: separate;
+	border-spacing: 0 0.4em;
+	width: 20em;
+}
+
+.status_tr
+{
+}
+
+.status_key
+{
+	font-weight: bold;
+	width: 17em;
+}
+
+.status_value
+{
+	padding-left: 10px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	width: 20em;
+}
+
+.dir
+{
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.dir::before
+{
+	content: url("folder.png");
+	padding-right: 5px;
+	vertical-align: -50%;
+}
+
+.file::before
+{
+	content: url("file.png");
+	padding-right: 5px;
+	vertical-align: -50%;
+}
+
+.files
+{
+	width: 22em;
+	height: 24em;
+	overflow-y: auto;
+}
+
+.inputblock
+{
+	float: left;
+	margin-right: 50px;
+	/* width: 9em; */
+}
+
+.inputfield
+{
+	position: relative;
+	width: 60px;
+	margin-top: 5px;
+}
+
+.inputcheck
+{
+	position: relative;
+	left: -4px;
+	margin-top: 3px;
+	margin-right: -4px;
+}
+
+.submitbutton
+{
+	margin-right: 10px;
+}
+
+.savebutton
+{
+	float: right;
+	margin-right: 10px;
+}
+
+.break
+{
+    display: block;
+    height: 0;
+    visibility: hidden;
+	padding-top: 2em;
+	clear: both;
+}
+
+.break2
+{
+    display: block;
+    height: 0;
+    visibility: hidden;
+	padding-top: 6em;
+	clear: both;
+}
+
+.version
+{
+	display:inline-block;
+	float: right;
+	font-size: 60%;
+	padding-bottom: 1.0em;
+	color: rgb(123, 123, 123);
+}
+
+.footer
+{
+	margin: auto;
+	font-size: 80%;
+	text-align: center;
+	width: 100%;
+	margin-bottom: 20px;
+	color: rgb(67, 144, 198);
+}
+
+.cfg_table
+{
+	display: table;
+    padding-top: 20px;
+}
+
+.cfg_table_row
+{
+	display: table-row;
+}
+
+.cfg_table_cell
+{
+	display: table-cell;
+	padding-bottom: 15px;
+	padding-right: 10px;
+	vertical-align: middle;
+}
+
+.inputfield_text
+{
+	position: relative;
+	margin-top: 5px;
+}

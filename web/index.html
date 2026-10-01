@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Weather Station</title>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+		<meta charset="utf-8"/>
+		<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate"/>
+		<meta http-equiv="expires" content="0"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="weather.css"/>
+		<script src="graph.js"></script>
+		<script src="weather.js"></script>
+	</head>
+	<body onload="doLoad()">
+		<div class="siteframe">
+			<form class="status" onsubmit="return false" id="summary">
+				<fieldset class="box status_box_summary"><legend class="box_status" id="summary_caption">Summary</legend>
+					<div class="block_status" id="summary_display">
+					<table  class="status_table">
+						<tr class="status_tr" id="summary_tr_temperature">
+							<td class="status_key">Temperature</td>
+							<td class="status_value" id="summary_temperature">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_temperature2">
+							<td class="status_key">Temperature 2</td>
+							<td class="status_value" id="summary_temperature2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr"  id="summary_tr_humidity">
+							<td class="status_key">Humidity</td>
+							<td class="status_value" id="summary_humidity">&nbsp;</td>
+						</tr>
+						<tr class="status_tr"  id="summary_tr_humidity2">
+							<td class="status_key">Humidity 2</td>
+							<td class="status_value" id="summary_humidity2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_dewpoint">
+							<td class="status_key">Dew point</td>
+							<td class="status_value" id="summary_dewpoint">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_dewpoint2">
+							<td class="status_key">Dew point 2</td>
+							<td class="status_value" id="summary_dewpoint2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_pressure">
+							<td class="status_key">Pressure</td>
+							<td class="status_value" id="summary_pressure">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_pressure_trend">
+							<td class="status_key">Trend 3 / 1</td>
+							<td class="status_value" id="summary_pressure_trend">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_lux">
+							<td class="status_key">Lux</td>
+							<td class="status_value" id="summary_lux">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_lux2">
+							<td class="status_key">Lux 2</td>
+							<td class="status_value" id="summary_lux2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_date">
+							<td class="status_key">Date</td>
+							<td class="status_value" id="summary_date">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_time">
+							<td class="status_key">Time</td>
+							<td class="status_value" id="summary_time">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_errors">
+							<td class="status_key">Errors</td>
+							<td class="status_value" id="summary_errors">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_sd">
+							<td class="status_key">SD card (f/t)</td>
+							<td class="status_value" id="summary_sd">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_uptime">
+							<td class="status_key">Uptime</td>
+							<td class="status_value" id="summary_uptime">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_version">
+							<td class="status_key">Version</td>
+							<td class="status_value" id="summary_version">&nbsp;</td>
+						</tr>
+					</table>
+					</div>
+				</fieldset>
+			</form>
+			
+			<div class="break">&nbsp;</div>
+			
+			<fieldset id="date_group" name="date_group" class="box box_date"><legend class="box_status">Date</legend>
+				<div class="inputblock inputblock_last">
+					<input class="inputcheck" type="checkbox" id="actualdate" name="actualdate" checked onclick="onClickActualData()">
+					<label for="actualdate" class="label">Actual data</label>
+				</div>
+				<br/>&nbsp;<br/>
+				<div class="inputblock">
+					<span class="label">Start date</span><br/>
+					<input class="date" type="date" id="startdate" name="startdate" onchange="onStartDate()">
+				</div>
+				<br/>&nbsp;<br/>&nbsp;<br/>
+				<div class="inputblock inputblock_last">
+					<span class="label">End date</span><br/>
+					<input class="date" type="date" id="enddate" name="enddate" onchange="onEndDate()">
+				</div>
+			</fieldset>
+               
+			<div class="break">&nbsp;</div>
+               
+			
+			<svg id="p_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="p_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="p_frame"/>
+				<g id="p_coord">
+					<g id="p_axis"/>
+					<g id="p_gridx"/>
+					<g id="p_gridy"/>
+				</g>
+				<g id="p_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+			
+			<div class="break">&nbsp;</div>
+			
+			<svg id="t_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="t_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="t_frame"/>
+				<g id="t_coord">
+					<g id="t_axis"/>
+					<g id="t_gridx"/>
+					<g id="t_gridy"/>
+				</g>
+				<g id="t_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+
+			<div class="break">&nbsp;</div>
+			
+			<svg id="t2_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="t2_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="t2_frame"/>
+				<g id="t2_coord">
+					<g id="t2_axis"/>
+					<g id="t2_gridx"/>
+					<g id="t2_gridy"/>
+				</g>
+				<g id="t2_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+
+			<div class="break">&nbsp;</div>
+			
+			<svg id="h_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="h_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="h_frame"/>
+				<g id="h_coord">
+					<g id="h_axis"/>
+					<g id="h_gridx"/>
+					<g id="h_gridy"/>
+				</g>
+				<g id="h_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+			
+			<div class="break">&nbsp;</div>
+			
+			<svg id="h2_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="h2_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="h2_frame"/>
+				<g id="h2_coord">
+					<g id="h2_axis"/>
+					<g id="h2_gridx"/>
+					<g id="h2_gridy"/>
+				</g>
+				<g id="h2_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+
+			<div class="break">&nbsp;</div>
+			
+			<svg id="d_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="d_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="d_frame"/>
+				<g id="d_coord">
+					<g id="d_axis"/>
+					<g id="d_gridx"/>
+					<g id="d_gridy"/>
+				</g>
+				<g id="d_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+
+			<div class="break">&nbsp;</div>
+			
+			<svg id="d2_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="d2_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="d2_frame"/>
+				<g id="d2_coord">
+					<g id="d2_axis"/>
+					<g id="d2_gridx"/>
+					<g id="d2_gridy"/>
+				</g>
+				<g id="d2_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+
+			<div class="break">&nbsp;</div>
+			
+			<svg id="l_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="l_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="l_frame"/>
+				<g id="l_coord">
+					<g id="l_axis"/>
+					<g id="l_gridx"/>
+					<g id="l_gridy"/>
+				</g>
+				<g id="l_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+			
+			<div class="break">&nbsp;</div>
+			
+			<svg id="l2_svg" class="graph graph_base" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+				<marker id="l2_arrow" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+					<path d="M 0 0 L 10 5 L 0 10 z" />
+				</marker>
+				<g id="l2_frame"/>
+				<g id="l2_coord">
+					<g id="l2_axis"/>
+					<g id="l2_gridx"/>
+					<g id="l2_gridy"/>
+				</g>
+				<g id="l2_data"/>
+					Sorry, your browser does not support inline SVG.
+			</svg>
+
+			<div class="break">&nbsp;</div>
+			
+			<fieldset class="box config_box"><legend class="box_status">Firmware update</legend>
+				<form class="status" id="config" enctype="multipart/form-data" action="firmwareupdate" method="POST" onsubmit="return doUpdate()">
+					<div class="block_update">
+						<button class="submitbutton" type="button" form="" onclick="document.getElementById('update_file_upload').click()">Update...</button>
+						<input style="display:none" type="file" accept=".bin" form="config" name="firmwarefile" id="update_file_upload" onchange="doUpdate()">
+						<button class="submitbutton" type="button" form="" onclick="doRestart()">Restart...</button>
+						<button class="submitbutton" type="button" form=""  onclick="doCfg()">Config...</button>
+					</div>
+				</form>
+			</fieldset>
+			
+			<div class="break">&nbsp;</div>
+			
+			<div class="files" id="files"></div>
+			
+			<hr class="seperator"/>
+			<div class="footer">© 2018-2022 by Reiner Pröls, Germany • Schleißheimerstraße 131, 80797 München</div>
+			<div class="version" id="version"></div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,52 @@
+
+.p_graphdata
+{
+	stroke: rgb(0, 0, 255);
+}
+
+.t_graphdata
+{
+	stroke: rgb(255, 0, 0);
+}
+
+.t2_graphdata
+{
+	stroke: rgb(150, 0, 0);
+}
+
+.h_graphdata
+{
+	stroke: rgb(0, 150, 255);
+}
+
+.h2_graphdata
+{
+	stroke: rgb(42, 125, 203);
+}
+
+.d_graphdata
+{
+	stroke: rgb(180, 0, 255);
+}
+
+.d2_graphdata
+{
+	stroke: rgb(80, 0, 150);
+}
+
+.l_graphdata
+{
+	stroke: rgb(0, 170, 0);
+}
+
+.l2_graphdata
+{
+	stroke: rgb(0, 80, 0);
+}
+
+/*
+.t_graphrect
+{
+	fill: rgb(255, 255, 255);
+}
+*/
