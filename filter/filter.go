@@ -25,3 +25,7 @@ func (f *AvgFilter) Reset(value float32) {
 func (f *AvgFilter) Add(value float32) {
 	f.value = value*f.filterConstant + (1.0-f.filterConstant)*f.value
 }
+
+func (f *AvgFilter) GetValue() float32 {
+	return f.value
+}

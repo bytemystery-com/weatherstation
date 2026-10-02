@@ -1,3 +1,29 @@
+// Copyright (c) 2026 Reiner Pröls
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// SPDX-License-Identifier: MIT
+//
+// Author: Reiner Pröls
+
+// I2C implementation for VEML7700 sensor
+
 package sensors
 
 import (
@@ -72,16 +98,18 @@ type Veml7700 struct {
 	shm          veml7700ShmData
 	measureCycle time.Duration
 	waitDuration time.Duration
+	doAdjust     bool
 }
 
-func NewVeml7700(addr uint16, bus *i2c.I2c) *Veml7700 {
-	dev, err := i2c.NewI2cDevice(addr, bus)
+func NewVeml7700(bus *i2c.I2c, doAdjust bool) *Veml7700 {
+	dev, err := i2c.NewI2cDevice(VEML7700_ADDR, bus)
 	if err != nil {
 		return nil
 	}
 	return &Veml7700{
-		dev:   dev,
-		state: veml7700States_init,
+		dev:      dev,
+		state:    veml7700States_init,
+		doAdjust: doAdjust,
 	}
 }
 
@@ -139,12 +167,12 @@ func (veml *Veml7700) setStandby(on bool) error {
 
 	cfg := uint16(data[1].Data[0]) | ((uint16(data[1].Data[1])) << 8)
 	cfg &= ^uint16(VEML7700_SHUTDOWN_MASK)
-
 	if on {
 		cfg |= VEML7700_SHUTDOWN_ON
 	} else {
 		cfg |= VEML7700_SHUTDOWN_OFF
 	}
+
 	data = make([]i2c.I2cData, 1)
 	data[0].Mode = i2c.I2c_write
 	data[0].Data = []byte{VEML7700_REG_CFG, byte(cfg & 0xFF), byte((cfg >> 8) & 0xFF)}
@@ -306,21 +334,7 @@ func (veml *Veml7700) adjust(raw, cfg uint16) (bool, error) {
 	return false, nil
 }
 
-func (veml *Veml7700) getRaw() (uint16, error) {
-	data := make([]i2c.I2cData, 2)
-	data[0].Mode = i2c.I2c_write
-	data[0].Data = []byte{VEML7700_REG_LUX_DATA}
-	data[1].Mode = i2c.I2c_read
-	data[1].Data = make([]byte, 2)
-	err := veml.dev.Transfer(data)
-	if err != nil {
-		return 0, err
-	}
-	var luxRaw uint16 = uint16(data[1].Data[0]) | (uint16(data[1].Data[1]) << 8)
-	return luxRaw, nil
-}
-
-// returns lux, white, luxRaw, whiteRaw, cfg, error
+// returns lux, white, luxRaw, whiteRaw, overrun, cfg, error
 func (veml *Veml7700) measure() (float32, float32, uint16, uint16, bool, uint16, error) {
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
@@ -400,7 +414,7 @@ func (veml *Veml7700) loop() {
 	var start time.Time
 	var duration time.Duration
 	sleep := veml.measureCycle
-	defaultSleep := time.Duration(1 * time.Millisecond)
+	defaultSleep := time.Duration(250 * time.Millisecond)
 	for {
 		time.Sleep(sleep)
 		switch veml.state {
@@ -408,8 +422,9 @@ func (veml *Veml7700) loop() {
 			err := veml.init()
 			if err != nil {
 				log.Printf("VEML7700 init failed with %v", err)
+			} else {
+				veml.state = veml7700States_cfg
 			}
-			veml.state = veml7700States_cfg
 			sleep = defaultSleep
 
 		case veml7700States_cfg:
@@ -417,8 +432,9 @@ func (veml *Veml7700) loop() {
 			if err != nil {
 				veml.state = veml7700States_init
 				log.Printf("VEML7700 configure failed with %v", err)
+			} else {
+				veml.state = veml7700States_measure
 			}
-			veml.state = veml7700States_measure
 			sleep = defaultSleep
 
 		case veml7700States_measure:
@@ -427,23 +443,30 @@ func (veml *Veml7700) loop() {
 			if err != nil {
 				veml.state = veml7700States_init
 				log.Printf("VEML7700 measure failed with %v", err)
-			}
-			ratio := float64(whiteRaw) / float64(luxRaw)
-			log.Printf("VEML7700 lux: %.2f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
-			veml.shm.lux.Store(uint32(lux * 100))
-			veml.shm.white.Store(uint32(white * 100))
-			veml.shm.overrun.Store(overrun)
-			veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))
-
-			duration = time.Since(start)
-			log.Printf("VEML7700 measure cycle time %d µsec", duration.Microseconds())
-			if duration < veml.measureCycle {
-				sleep = veml.measureCycle - duration
 			} else {
-				log.Printf("VEML7700 measure tooks too long %d nsec", duration)
-				sleep = veml.measureCycle
+				var ratio float64
+				if luxRaw > 0 {
+					ratio = float64(whiteRaw) / float64(luxRaw)
+				}
+				// log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
+				veml.shm.lux.Store(uint32(lux * 100))
+				veml.shm.white.Store(uint32(white * 100))
+				veml.shm.overrun.Store(overrun)
+				veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))
+
+				if veml.doAdjust {
+					veml.adjust(luxRaw, cfg)
+				}
+
+				duration = time.Since(start)
+				// log.Printf("VEML7700 measure cycle time %d µsec", duration.Microseconds())
+				if duration < veml.measureCycle {
+					sleep = veml.measureCycle - duration
+				} else {
+					log.Printf("VEML7700 measure tooks too long %d nsec", duration)
+					sleep = veml.measureCycle
+				}
 			}
-			veml.adjust(luxRaw, cfg)
 		}
 	}
 }
