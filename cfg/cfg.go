@@ -1,6 +1,8 @@
 package cfg
 
 import (
+	"encoding/json"
+	"log"
 	"strconv"
 
 	"gopkg.in/ini.v1"
@@ -88,11 +90,43 @@ func (c *Cfg) SetDeaultCfg() {
 	c.ini = ini.Empty()
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T, DEF_TEMPERATURE_FC, "Temperatur filter")
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T2, DEF_TEMPERATURE_FC2, "Temperatur filter 2")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H, DEF_TEMPERATURE_FC, "Humidity filter")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H2, DEF_TEMPERATURE_FC2, "Humidity filter 2")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP, DEF_TEMPERATURE_FC, "Dew point filter")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP2, DEF_TEMPERATURE_FC2, "Dew point filter 2")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L, DEF_TEMPERATURE_FC, "Lux filter")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_TEMPERATURE_FC2, "Lux filter 2")
-	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_TEMPERATURE_FC2, "Pressure filter")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H, DEF_HUMIDITY_FC, "Humidity filter")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H2, DEF_HUMIDITY_FC2, "Humidity filter 2")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP, DEF_DEWPOINT_FC, "Dew point filter")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP2, DEF_DEWPOINT_FC2, "Dew point filter 2")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L, DEF_LUX_FC, "Lux filter")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_LUX_FC2, "Lux filter 2")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC, "Pressure filter")
+}
+
+func (c *Cfg) GetJson() []byte {
+	type filterdata struct {
+		T_fc  float32 `json:"t_fc"`
+		T_fc2 float32 `json:"t_fc2"`
+		H_fc  float32 `json:"h_fc"`
+		H_fc2 float32 `json:"h_fc2"`
+		D_fc  float32 `json:"d_fc"`
+		D_fc2 float32 `json:"d_fc2"`
+		L_fc  float32 `json:"l_fc"`
+		L_fc2 float32 `json:"l_fc2"`
+		P_fc2 float32 `json:"p_fc"`
+	}
+	f := filterdata{
+		T_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T, DEF_TEMPERATURE_FC),
+		T_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T2, DEF_TEMPERATURE_FC2),
+		H_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H, DEF_HUMIDITY_FC),
+		H_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H2, DEF_HUMIDITY_FC2),
+		D_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP, DEF_DEWPOINT_FC),
+		D_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP2, DEF_DEWPOINT_FC2),
+		P_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC),
+		L_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_LUX_FC),
+		L_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_LUX_FC2),
+	}
+	data := map[string]any{
+		"filterdata": f,
+	}
+
+	b, _ := json.Marshal(data)
+	log.Print(string(b))
+	return b
 }

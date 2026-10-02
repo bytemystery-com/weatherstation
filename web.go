@@ -5,41 +5,19 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+
+	"weatherd/cfg"
 )
 
 //go:embed web/*
 var webFiles embed.FS
 
-type FilterData struct {
-	TemperatureFilterConstant  string `json:"t_fc"`
-	TemperatureFilterConstant2 string `json:"t_fc2"`
-	HumidityFilterConstant     string `json:"h_fc"`
-	HumidityFilterConstant2    string `json:"h_fc2"`
-	DewPointFilterConstant     string `json:"d_fc"`
-	DewPointFilterConstant2    string `json:"d_fc2"`
-	PressureFilterConstant     string `json:"p_fc"`
-	LuxFilterConstant          string `json:"l_fc"`
-	LuxFilterConstant2         string `json:"l_fc2"`
-}
-
-type GeneralData struct {
-	Height  string `json:"height"`
-	Name    string `json:"name"`
-	DNSName string `json:"dns_name"`
-	UsePass bool   `json:"use_pass"`
-}
-
-type ConfigResponse struct {
-	FilterData FilterData  `json:"filterdata"`
-	General    GeneralData `json:"general"`
-}
-
-func getCfg(w http.ResponseWriter, r *http.Request) {
+func getCfg(w http.ResponseWriter, r *http.Request, cfg *cfg.Cfg) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte("{}"))
+	w.Write(cfg.GetJson())
 }
 
-func startWebServer(port int, done chan<- error) *http.Server {
+func startWebServer(port int, done chan<- error, cfg *cfg.Cfg) *http.Server {
 	mux := http.NewServeMux()
 	webFS, err := fs.Sub(webFiles, "web")
 	if err != nil {
@@ -47,7 +25,9 @@ func startWebServer(port int, done chan<- error) *http.Server {
 		return nil
 	}
 	mux.Handle("GET /", http.FileServer(http.FS(webFS)))
-	mux.HandleFunc("GET /getcfg", getCfg)
+	mux.HandleFunc("GET /getcfg", func(w http.ResponseWriter, r *http.Request) {
+		getCfg(w, r, cfg)
+	})
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
