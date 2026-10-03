@@ -6,16 +6,51 @@ import (
 	"time"
 
 	"weatherd/cfg"
+	"weatherd/data"
 	"weatherd/filter"
 	"weatherd/i2c"
 	"weatherd/sensors"
-	"weatherd/shm"
+	"weatherd/webserver"
 )
 
-var Data shm.ShmData
+var Data data.Data
+
+type WebCallbacksImpl struct{}
+
+var _ webserver.WebCallBacks = (*WebCallbacksImpl)(nil)
+
+func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
+	data := webserver.WebDataAll{
+		Lux: webserver.WebDataLux{
+			WebData: webserver.WebData{
+				SensorName: Data.Veml7700.GetName(),
+				Errors:     0,
+				Valid:      true,
+			},
+			Lux:  Data.F_lux.GetValue(),
+			Lux2: Data.F_lux2.GetValue(),
+		},
+		Pressure: webserver.WebDataPressure{
+			WebData: webserver.WebData{
+				SensorName: Data.Bmp581.GetName(),
+				Errors:     0,
+				Valid:      true,
+			},
+			Pressure:  0,
+			PressureNormal:  0,
+		},
+	}
+	return &data
+}
+
+var callBacks WebCallbacksImpl
 
 func main() {
-	config, err := cfg.NewCfg("weatherd.cfg")
+	var config *cfg.Cfg
+	config, err := cfg.NewCfg("weatherd.cfg", func() {
+		Data.F_lux.SetFilterConstant(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC))
+		Data.F_lux2.SetFilterConstant(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2))
+	})
 	if err != nil {
 		return
 	}
@@ -32,20 +67,25 @@ func main() {
 		return
 	}
 
-	veml7700 := sensors.NewVeml7700(bus, true)
-	veml7700.Start(1000 * time.Millisecond)
+	Data.Veml7700 = sensors.NewVeml7700(bus, true, true)
+	Data.Veml7700.Start(1000 * time.Millisecond)
 
+	Data.F_lux, err = filter.NewAvgFilter(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC), 0)
+	Data.F_lux2, err = filter.NewAvgFilter(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2), 0)
+	log.Printf("l2: %f", config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2))
+
+	Data.WebServer = webserver.NewWebServer(8080, callBacks, config)
 	webError := make(chan error, 1)
-	startWebServer(8080, webError, config)
+	Data.WebServer.StartWebServer(webError)
 
-	f_lux, err := filter.NewAvgFilter(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC), 0)
-	f_lux2, err := filter.NewAvgFilter(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2), 0)
+	time.Sleep(1000 * time.Millisecond)
 	for {
 		time.Sleep(1000 * time.Millisecond)
-		lux, _ := veml7700.GetData()
-		f_lux.Add(lux)
-		f_lux2.Add(lux)
-		log.Printf("Lux: %.2f, Lux2: %.2f", f_lux.GetValue(), f_lux2.GetValue())
+		lux, _ := Data.Veml7700.GetData()
+		Data.F_lux.Add(lux)
+		Data.F_lux2.Add(lux)
+
+		log.Printf("Lux: %.2f, Lux2: %.2f", Data.F_lux.GetValue(), Data.F_lux2.GetValue())
 	}
 
 	<-webError

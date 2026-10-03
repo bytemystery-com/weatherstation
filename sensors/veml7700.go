@@ -35,6 +35,9 @@ import (
 	"weatherd/i2c"
 )
 
+// https://www.vishay.com/docs/84286/veml7700.pdf
+// https://www.vishay.com/docs/84323/designingveml7700.pdf
+
 const (
 	VEML7700_ADDR = 0x10
 
@@ -93,27 +96,33 @@ type veml7700ShmData struct {
 }
 
 type Veml7700 struct {
-	dev          *i2c.I2cDevice
-	state        veml7700States
-	shm          veml7700ShmData
-	measureCycle time.Duration
-	waitDuration time.Duration
-	doAdjust     bool
+	dev                   *i2c.I2cDevice
+	state                 veml7700States
+	shm                   veml7700ShmData
+	measureCycle          time.Duration
+	waitDuration          time.Duration
+	doAdjust              bool
+	doHeuristicCorrection bool
 }
 
-func NewVeml7700(bus *i2c.I2c, doAdjust bool) *Veml7700 {
+func NewVeml7700(bus *i2c.I2c, doAdjust, doHeuristicCorrection bool) *Veml7700 {
 	dev, err := i2c.NewI2cDevice(VEML7700_ADDR, bus)
 	if err != nil {
 		return nil
 	}
 	return &Veml7700{
-		dev:      dev,
-		state:    veml7700States_init,
-		doAdjust: doAdjust,
+		dev:                   dev,
+		state:                 veml7700States_init,
+		doAdjust:              doAdjust,
+		doHeuristicCorrection: doHeuristicCorrection,
 	}
 }
 
 // Interface for web server
+func (veml *Veml7700) GetName() string {
+	return "VEML7700"
+}
+
 func (veml *Veml7700) GetData() (float32, float32) {
 	return float32(veml.shm.lux.Load() / 100), float32(veml.shm.lux.Load() / 100)
 }
@@ -247,6 +256,8 @@ func (veml *Veml7700) getCfgAsAbstract(cfg uint16) (int, int, error) {
 		i = -1
 	case VEML7700_INTEG_TIME_25:
 		i = -2
+	default:
+		return 0, 0, fmt.Errorf("Invalid integration time %04X", intTime)
 	}
 
 	switch gain {
@@ -258,6 +269,8 @@ func (veml *Veml7700) getCfgAsAbstract(cfg uint16) (int, int, error) {
 		g = 2
 	case VEML7700_GAIN_08:
 		g = 1
+	default:
+		return 0, 0, fmt.Errorf("Invalid gain %04X", gain)
 	}
 	return g, i, nil
 }
@@ -282,6 +295,7 @@ func (veml *Veml7700) getCfgValueFromAbstract(G int, I int) (uint16, uint16, err
 	default:
 		return 0, 0, fmt.Errorf("Integration time out of range %d", I)
 	}
+
 	switch G {
 	case 4:
 		g = VEML7700_GAIN_2
@@ -297,13 +311,18 @@ func (veml *Veml7700) getCfgValueFromAbstract(G int, I int) (uint16, uint16, err
 	return g, i, nil
 }
 
+/*
+Vishy App Note "Designing the VEML7700 Into an Application"
+Vishay Document Number: 84323, Fig. 23 Flow Chart on page 21
+*/
 func (veml *Veml7700) adjust(raw, cfg uint16) (bool, error) {
 	G, I, err := veml.getCfgAsAbstract(cfg)
-	GOld := G
-	IOld := I
 	if err != nil {
 		return false, err
 	}
+	GOld := G
+	IOld := I
+
 	if raw < 100 {
 		if G < 4 {
 			G++
@@ -334,8 +353,8 @@ func (veml *Veml7700) adjust(raw, cfg uint16) (bool, error) {
 	return false, nil
 }
 
-// returns lux, white, luxRaw, whiteRaw, overrun, cfg, error
-func (veml *Veml7700) measure() (float32, float32, uint16, uint16, bool, uint16, error) {
+// returns lux, white/als ratio, luxRaw, overrun, cfg, error
+func (veml *Veml7700) measure() (float32, float32, uint16, bool, uint16, error) {
 	data := make([]i2c.I2cData, 2)
 	data[0].Mode = i2c.I2c_write
 	data[0].Data = []byte{VEML7700_REG_LUX_DATA}
@@ -343,16 +362,25 @@ func (veml *Veml7700) measure() (float32, float32, uint16, uint16, bool, uint16,
 	data[1].Data = make([]byte, 4)
 	err := veml.dev.Transfer(data)
 	if err != nil {
-		return 0, 0, 0, 0, false, 0, err
+		return 0, 0, 0, false, 0, err
 	}
 	var luxRaw uint16 = uint16(data[1].Data[0]) | (uint16(data[1].Data[1]) << 8)
 	var whiteRaw uint16 = uint16(data[1].Data[2]) | (uint16(data[1].Data[3]) << 8)
+
+	// https://forums.adafruit.com/viewtopic.php?p=968243
+	x := float64(whiteRaw)
+	whiteRawCor := ((((2.0e-15*x+4e-12)*x+9e-6)*x+1.0179)*x - 11.052)
+
+	var ratio float64 = 0
+	if luxRaw > 0 {
+		ratio = float64(whiteRawCor) / float64(luxRaw)
+	}
 
 	data[0].Data = []byte{VEML7700_REG_CFG}
 	data[1].Data = make([]byte, 2)
 	err = veml.dev.Transfer(data)
 	if err != nil {
-		return 0, 0, luxRaw, whiteRaw, false, 0, err
+		return 0, 0, luxRaw, false, 0, err
 	}
 	cfg := uint16(data[1].Data[0]) | ((uint16(data[1].Data[1])) << 8)
 	intTime := (cfg & VEML7700_INTEG_TIME_MASK)
@@ -390,9 +418,8 @@ func (veml *Veml7700) measure() (float32, float32, uint16, uint16, bool, uint16,
 	resolution := 2.1504 / (intTimeFactor * gainFactor)
 	maxLux := 140926.0 / (intTimeFactor * gainFactor)
 	lux := float64(luxRaw) * resolution
-	white := float64(whiteRaw) * resolution
-	// https://www.vishay.com/docs/84323/designingveml7700.pdf?utm_source=chatgpt.com
 
+	// https://www.vishay.com/docs/84323/designingveml7700.pdf?utm_source=chatgpt.com
 	overrun := false
 	if lux >= maxLux {
 		// log.Printf("Lux > Maxlux - 1")
@@ -406,15 +433,30 @@ func (veml *Veml7700) measure() (float32, float32, uint16, uint16, bool, uint16,
 		overrun = true
 		lux = maxLux
 	}
+	if veml.doHeuristicCorrection && !overrun && ratio > 0 {
+		// von Tante Google:
+		if ratio > 2.5 {
+			// Sehr hoher Infrarot-Anteil (z.B. pralle Sonne).
+			// Der Sensor überschätzt die Helligkeit im sichtbaren Bereich leicht.
+			// Wir korrigieren den Wert um ca. 10-15% nach unten.
+			lux = lux * 0.88
+		} else if ratio < 1.3 {
+			// Sehr sauberer Bereich (z.B. reine LED-Beleuchtung ohne Infrarot)
+			// Keine spektrale Korrektur nötig
+		} else {
+			// Mischlicht (z.B. bewölkt, Halogen)
+			lux = lux * 0.95
+		}
+	}
 
-	return float32(lux), float32(white), luxRaw, whiteRaw, overrun, cfg, nil
+	return float32(lux), float32(ratio), luxRaw, overrun, cfg, nil
 }
 
 func (veml *Veml7700) loop() {
 	var start time.Time
 	var duration time.Duration
 	sleep := veml.measureCycle
-	defaultSleep := time.Duration(250 * time.Millisecond)
+	defaultSleep := time.Duration(250 * time.Millisecond) // > 100 msec
 	for {
 		time.Sleep(sleep)
 		switch veml.state {
@@ -439,18 +481,13 @@ func (veml *Veml7700) loop() {
 
 		case veml7700States_measure:
 			start = time.Now()
-			lux, white, luxRaw, whiteRaw, overrun, cfg, err := veml.measure()
+			lux, ratio, luxRaw, overrun, cfg, err := veml.measure()
 			if err != nil {
 				veml.state = veml7700States_init
 				log.Printf("VEML7700 measure failed with %v", err)
 			} else {
-				var ratio float64
-				if luxRaw > 0 {
-					ratio = float64(whiteRaw) / float64(luxRaw)
-				}
 				// log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
 				veml.shm.lux.Store(uint32(lux * 100))
-				veml.shm.white.Store(uint32(white * 100))
 				veml.shm.overrun.Store(overrun)
 				veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))
 

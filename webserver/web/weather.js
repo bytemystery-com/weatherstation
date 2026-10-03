@@ -272,13 +272,13 @@ function doPeriodic()
 				if (tmp = document.getElementById("summary_temperature2"))
 					tmp.textContent = json.sensors[1].temperature2 + " (" + json.sensors[0].temperature2 + ") °C";
 				if (tmp = document.getElementById("summary_humidity"))
-					tmp.textContent = json.sensors[1].humidity + " (" + json.sensors[0].humidity + ") % rel";
+					tmp.textContent = json.sensors[1].humidity + " % rel";
 				if (tmp = document.getElementById("summary_humidity2"))
-					tmp.textContent = json.sensors[1].humidity2 + " (" + json.sensors[0].humidity2 + ") % rel";
+					tmp.textContent = json.sensors[1].humidity2 + " % rel";
 				if (tmp = document.getElementById("summary_dewpoint"))
-					tmp.textContent = json.sensors[1].dewpoint + " (" + json.sensors[0].dewpoint + ") °C";
+					tmp.textContent = json.sensors[1].dewpoint + " °C";
 				if (tmp = document.getElementById("summary_dewpoint2"))
-					tmp.textContent = json.sensors[1].dewpoint2 + " (" + json.sensors[0].dewpoint + ") °C";
+					tmp.textContent = json.sensors[1].dewpoint2 + " °C";
 				if (tmp = document.getElementById("summary_pressure"))
 					tmp.textContent = json.sensors[0].pressure + " / " + json.sensors[0].pressure_normal + " hPa";
 				if (tmp = document.getElementById("summary_pressure_trend"))

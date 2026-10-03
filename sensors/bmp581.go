@@ -183,6 +183,10 @@ func NewBmp581(addr uint16, bus *i2c.I2c) *Bmp581 {
 }
 
 // Interface for web server
+func (bmp *Bmp581) GetName() string {
+	return "BMP581"
+}
+
 func (bmp *Bmp581) GetData() (float32, float32) {
 	return float32(bmp.shm.temperature.Load() / 100), float32(bmp.shm.pressure.Load() / 10.0)
 }
