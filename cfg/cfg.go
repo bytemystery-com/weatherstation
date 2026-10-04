@@ -1,21 +1,22 @@
 package cfg
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 
-	"golang.org/x/crypto/argon2"
+	"weatherd/helper"
+
 	"gopkg.in/ini.v1"
 )
 
 const (
 	WEATHER_STATION_VERSION = "2.0"
+
+	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
 
 	DEF_TEMPERATURE_FC  = 0.2   // nach ~ 6 Werten 75%,
 	DEF_TEMPERATURE_FC2 = 0.002 // nach ~ 693 Werten 75%,
@@ -24,6 +25,7 @@ const (
 	DEF_DEWPOINT_FC     = 0.1
 	DEF_DEWPOINT_FC2    = 0.002
 	DEF_PRESSURE_FC     = 0.1
+	DEF_PRESSURE_FC2    = 0.01
 	DEF_LUX_FC          = 0.3 // nach 4 Werten 75%
 	DEF_LUX_FC2         = 0.004
 
@@ -35,42 +37,70 @@ const (
 	KEY_FILTER_CONST_DP  = "filter_constant_dp"
 	KEY_FILTER_CONST_DP2 = "filter_constant_dp2"
 	KEY_FILTER_CONST_P   = "filter_constant_p"
+	KEY_FILTER_CONST_P2  = "filter_constant_p2"
 	KEY_FILTER_CONST_L   = "filter_constant_l"
 	KEY_FILTER_CONST_L2  = "filter_constant_l2"
 
-	SECTION_GENERAL             = "general"
-	KEY_GENERAL_HEIGHT          = "height"
-	KEY_GENERAL_NAME            = "Name"
-	KEY_GENERAL_DNS_NAME        = "DnsName"
-	KEY_GENERAL_USE_PASSWORD    = "UsePassword"
-	KEY_GENERAL_PASSWORD        = "Password"
-	KEY_GENERAL_UPDATE_INTERVAL = "UpdateInterval"
+	SECTION_GENERAL              = "general"
+	KEY_GENERAL_HEIGHT           = "height"
+	KEY_GENERAL_NAME             = "Name"
+	KEY_GENERAL_USE_PASSWORD     = "UsePassword"
+	KEY_GENERAL_PASSWORD         = "Password"
+	KEY_GENERAL_UPDATE_INTERVAL  = "UpdateInterval"
+	KEY_GENERAL_MEASURE_INTERVAL = "MeasureInterval"
 
-	DEF_HEIGHT          = 515
-	DEF_NAME            = "Weather Station"
-	DEF_DNS_NAME        = "weather-station"
-	DEF_USE_PASSWORD    = true
-	DEF_UPDATE_INTERVAL = 5000
+	SECTION_SYSTEM               = "system"
+	KEY_SYSTEM_RESTART_POFF_TIME = "PoweroffTime"
+
+	SECTION_RUN    = "run"
+	KEY_RUN_REBOOT = "Reboots"
+
+	SECTION_DATA      = "data"
+	KEY_DATA_FOLDER   = "Folder"
+	KEY_DATA_INTERVAL = "Interval"
+
+	DEF_HEIGHT            = 515
+	DEF_NAME              = "Weather Station"
+	DEF_USE_PASSWORD      = true
+	DEF_UPDATE_INTERVAL   = 5000
+	DEF_RESTART_POFF_TIME = 60 // sec
+	DEF_DATA_FOLDER       = "/data"
+	DEF_DATA_INTERVAL     = 300  // sec
+	DEF_MEASURE_INTERVAL  = 1000 // msec
 )
 
 type Cfg struct {
 	ini      *ini.File
 	doReload func()
 	cfgFile  string
+	lock     sync.RWMutex
 }
 
 func NewCfg(file string, doReload func()) (*Cfg, error) {
-	cfg, err := ini.Load(file)
+	ok, err := helper.ExistFile(file)
 	if err != nil {
-		cfg = ini.Empty()
+		return nil, err
 	}
-	return &Cfg{
-		ini:     cfg,
+	c := Cfg{
 		cfgFile: file,
-	}, nil
+		ini:     ini.Empty(),
+	}
+	if !ok {
+		c.SetDeaultCfg()
+		c.Save()
+	} else {
+		cfg, err := ini.Load(file)
+		if err != nil {
+			cfg = ini.Empty()
+		}
+		c.ini = cfg
+	}
+	return &c, nil
 }
 
 func (c *Cfg) Save() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	err := c.ini.SaveTo(c.cfgFile)
 	if err != nil {
 		return err
@@ -83,23 +113,33 @@ func (c *Cfg) Save() error {
 
 // Getter
 func (c *Cfg) GetIntValue(section, key string, def int) int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.ini.Section(section).Key(key).MustInt(def)
 }
 
 func (c *Cfg) GetStringValue(section, key string, def string) string {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.ini.Section(section).Key(key).MustString(def)
 }
 
 func (c *Cfg) GetFloatValue(section, key string, def float32) float32 {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return float32(c.ini.Section(section).Key(key).MustFloat64(float64(def)))
 }
 
 func (c *Cfg) GetBoolValue(section, key string, def bool) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.ini.Section(section).Key(key).MustBool(def)
 }
 
 // Setter
 func (c *Cfg) SetStringValue(section, key, value, comment string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.ini.Section(section).Key(key).SetValue(value)
 	if comment != "" {
 		c.ini.Section(section).Key(key).Comment = comment
@@ -107,6 +147,8 @@ func (c *Cfg) SetStringValue(section, key, value, comment string) {
 }
 
 func (c *Cfg) SetIntValue(section, key string, value int, comment string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.ini.Section(section).Key(key).SetValue(strconv.Itoa(value))
 	if comment != "" {
 		c.ini.Section(section).Key(key).Comment = comment
@@ -114,6 +156,8 @@ func (c *Cfg) SetIntValue(section, key string, value int, comment string) {
 }
 
 func (c *Cfg) SetFloatValue(section, key string, value float32, comment string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.ini.Section(section).Key(key).SetValue(strconv.FormatFloat(float64(value), 'f', -1, 32))
 	if comment != "" {
 		c.ini.Section(section).Key(key).Comment = comment
@@ -121,6 +165,8 @@ func (c *Cfg) SetFloatValue(section, key string, value float32, comment string) 
 }
 
 func (c *Cfg) SetBoolValue(section, key string, value bool, comment string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.ini.Section(section).Key(key).SetValue(strconv.FormatBool(value))
 	if comment != "" {
 		c.ini.Section(section).Key(key).Comment = comment
@@ -138,13 +184,21 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L, DEF_LUX_FC, "Lux filter")
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_LUX_FC2, "Lux filter 2")
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC, "Pressure filter")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, DEF_PRESSURE_FC2, "Pressure filter 2")
 
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEIGHT, DEF_HEIGHT, "Height of station ")
 	c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_NAME, DEF_NAME, "Name of station (title in browser)")
-	c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_DNS_NAME, DEF_DNS_NAME, "DNS name")
 	c.SetBoolValue(SECTION_GENERAL, KEY_GENERAL_USE_PASSWORD, DEF_USE_PASSWORD, "Use password")
 	c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_PASSWORD, "", "Password hash")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_UPDATE_INTERVAL, DEF_UPDATE_INTERVAL, "Main page update interval [msec]")
+	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_MEASURE_INTERVAL, DEF_MEASURE_INTERVAL, "Measure interval [msec]")
+
+	c.SetIntValue(SECTION_SYSTEM, KEY_SYSTEM_RESTART_POFF_TIME, DEF_RESTART_POFF_TIME, "Restart after restart command [sec]")
+
+	c.SetStringValue(SECTION_DATA, KEY_DATA_FOLDER, DEF_DATA_FOLDER, "Folder for data (csv files)")
+	c.SetIntValue(SECTION_DATA, KEY_DATA_INTERVAL, DEF_DATA_INTERVAL, "Interval for data write [sec]")
+
+	c.SetIntValue(SECTION_RUN, KEY_RUN_REBOOT, 0, "Number of reboots")
 }
 
 func (c *Cfg) GetJson() []byte {
@@ -157,7 +211,8 @@ func (c *Cfg) GetJson() []byte {
 		D_fc2 float32 `json:"d_fc2"`
 		L_fc  float32 `json:"l_fc"`
 		L_fc2 float32 `json:"l_fc2"`
-		P_fc2 float32 `json:"p_fc"`
+		P_fc  float32 `json:"p_fc"`
+		P_fc2 float32 `json:"p_fc2"`
 	}
 	f := filterdata{
 		T_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T, DEF_TEMPERATURE_FC),
@@ -168,18 +223,17 @@ func (c *Cfg) GetJson() []byte {
 		D_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP2, DEF_DEWPOINT_FC2),
 		L_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L, DEF_LUX_FC),
 		L_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_LUX_FC2),
-		P_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC),
+		P_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC),
+		P_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, DEF_PRESSURE_FC2),
 	}
 	type general struct {
 		Height      int    `json:"height"`
 		Name        string `json:"name"`
-		DnsName     string `json:"dns_name"`
 		UsePassword bool   `json:"use_pass"`
 	}
 	g := general{
 		Height:      c.GetIntValue(SECTION_GENERAL, KEY_GENERAL_HEIGHT, DEF_HEIGHT),
 		Name:        c.GetStringValue(SECTION_GENERAL, KEY_GENERAL_NAME, DEF_NAME),
-		DnsName:     c.GetStringValue(SECTION_GENERAL, KEY_GENERAL_DNS_NAME, DEF_DNS_NAME),
 		UsePassword: c.GetBoolValue(SECTION_GENERAL, KEY_GENERAL_USE_PASSWORD, DEF_USE_PASSWORD),
 	}
 	data := map[string]any{
@@ -281,13 +335,19 @@ func (c *Cfg) SetCfg(r *http.Request) error {
 		}
 	}
 
+	val = r.FormValue("p_fc2")
+	if val != "" {
+		f, err := strconv.ParseFloat(val, 32)
+		if err == nil {
+			c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, float32(f), "")
+		} else {
+			allErrors = errors.Join(allErrors, err)
+		}
+	}
+
 	val = r.FormValue("name")
 	if val != "" {
 		c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_NAME, val, "")
-	}
-	val = r.FormValue("dns_name")
-	if val != "" {
-		c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_DNS_NAME, val, "")
 	}
 	val = r.FormValue("height")
 	if val != "" {
@@ -309,7 +369,7 @@ func (c *Cfg) SetCfg(r *http.Request) error {
 	}
 	val = r.FormValue("pass")
 	if val != "" {
-		val, err := c.hashPassword(val)
+		val, err := helper.HashPassword(val)
 		if err == nil {
 			c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_PASSWORD, val, "")
 		} else {
@@ -321,27 +381,4 @@ func (c *Cfg) SetCfg(r *http.Request) error {
 		allErrors = errors.Join(allErrors, err)
 	}
 	return allErrors
-}
-
-func (c *Cfg) hashPassword(password string) (string, error) {
-	const (
-		saltLen  = 16
-		timeCost = 1
-		memory   = 64 * 1024 // 64 MiB
-		threads  = 4
-		keyLen   = 32
-	)
-
-	salt := make([]byte, saltLen)
-
-	_, err := rand.Read(salt)
-	if err != nil {
-		return "", err
-	}
-
-	hash := argon2.IDKey([]byte(password), salt, timeCost, memory, threads, keyLen)
-	salt64 := base64.RawStdEncoding.EncodeToString(salt)
-	hash64 := base64.RawStdEncoding.EncodeToString(hash)
-
-	return fmt.Sprintf("$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s", memory, timeCost, threads, salt64, hash64), nil
 }

@@ -195,6 +195,10 @@ func (bmp *Bmp581) GetData() (float32, float32) {
 	return float32(bmp.shm.temperature.Load() / 100), float32(bmp.shm.pressure.Load() / 10.0)
 }
 
+func (bmp *Bmp581) GetError() (uint32, bool) {
+	return bmp.shm.errors.Load(), bmp.shm.isValid.Load()
+}
+
 func (bmp *Bmp581) Start(measureCycle time.Duration) {
 	bmp.measureCycle = measureCycle
 	go bmp.loop()

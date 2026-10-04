@@ -7,7 +7,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"syscall"
+	"time"
+
+	"weatherd/cfg"
 )
+
+var RebbotRequested atomic.Bool
 
 func GetFanRPM() (int, error) {
 	entries, err := os.ReadDir("/sys/class/hwmon")
@@ -212,4 +219,31 @@ func GetRam() (used, total uint32, err error) {
 	}
 
 	return memTotal - memAvailable, memTotal, nil
+}
+
+func Restart(config *cfg.Cfg) {
+	go func() {
+		RebbotRequested.Store(true)
+
+		time.Sleep(3 * time.Second)
+		cmd := exec.Command("sh", "-c", fmt.Sprintf("echo +%d > /sys/class/rtc/rtc0/wakealarm", config.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)))
+		err := cmd.Run()
+		if err == nil {
+			config.SetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, config.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)+1, "")
+			exec.Command("systemctl", "poweroff").Run()
+		}
+	}()
+}
+
+func GetDiskSpace() (free, total uint64, err error) {
+	var stat syscall.Statfs_t
+
+	if err := syscall.Statfs("/", &stat); err != nil {
+		return 0, 0, err
+	}
+
+	total = stat.Blocks * uint64(stat.Bsize) / 1024
+	free = stat.Bavail * uint64(stat.Bsize) / 1024
+
+	return free, total, nil
 }

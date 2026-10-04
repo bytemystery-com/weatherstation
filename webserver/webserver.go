@@ -1,23 +1,21 @@
 package webserver
 
 import (
-	"crypto/subtle"
 	"embed"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
+	"os/exec"
 	"strings"
 	"time"
 
 	"weatherd/cfg"
+	"weatherd/helper"
 	"weatherd/raspi"
-
-	"golang.org/x/crypto/argon2"
 )
 
 type HasErrors interface {
@@ -42,10 +40,12 @@ type WebDataLux struct {
 
 type WebDataPressure struct {
 	WebData
-	Temperature    float32 `json:"temperature"`
-	Temperature2   float32 `json:"temperature2"`
-	Pressure       float32 `json:"pressure"`
-	PressureNormal float32 `json:"pressure_normal"`
+	Temperature     float32 `json:"temperature"`
+	Temperature2    float32 `json:"temperature2"`
+	Pressure        float32 `json:"pressure"`
+	PressureNormal  float32 `json:"pressure_normal"`
+	Pressure2       float32 `json:"pressure2"`
+	PressureNormal2 float32 `json:"pressure_normal2"`
 }
 
 type WebDataHumidity struct {
@@ -140,11 +140,8 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	type sd struct {
-		Free        uint64 `json:"free"`
-		Total       uint64 `json:"total"`
-		Size        uint64 `json:"size"`
-		ClusterSize uint   `json:"cluster_size"`
-		SectorSize  uint   `json:"sector_size"`
+		Free  uint64 `json:"free"`
+		Total uint64 `json:"total"`
 	}
 
 	type raspiStatus struct {
@@ -208,6 +205,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	raspiThrottle, _ := raspi.GetThrottled()
 	raspiSerial, _ := raspi.GetSerial()
 	raspiRamUsed, raspiRamTotal, _ := raspi.GetRam()
+	raspiDiskFree, raspiDiskTotal, _ := raspi.GetDiskSpace()
 
 	dj := dataJson{
 		Config: config{
@@ -220,6 +218,11 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 			PressureTrend1: 0.1,
 			PressureTrend3: -0.3,
 			Errors:         errors,
+			Resets:         uint(ws.cfg.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)),
+			Sd: sd{
+				Free:  raspiDiskFree,
+				Total: raspiDiskTotal,
+			},
 			RaspiStatus: raspiStatus{
 				Fan:         raspiRpm,
 				CpuUsage:    int(raspiCpu),
@@ -235,8 +238,98 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 		Sensors: list,
 	}
 	b, _ := json.Marshal(dj)
-	log.Print(string(b))
+	// log.Print(string(b))
 	w.Write(b)
+}
+
+func copyFile(src, dest string) error {
+	s, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	d, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(d, s)
+	if err != nil {
+		d.Close()
+		return err
+	}
+	return d.Close()
+}
+
+func (ws *WebServer) fwUpdate(w http.ResponseWriter, r *http.Request) {
+	file, header, err := r.FormFile("firmwarefile")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	tmpFile := "/tmp/weatherd.new"
+
+	dst, err := os.Create(tmpFile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+
+	n, err := io.Copy(dst, file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if n != header.Size {
+		http.Error(w, fmt.Errorf("size mismatch").Error(), http.StatusInternalServerError)
+		return
+	}
+
+	path, err := os.Readlink("/proc/self/exe")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	oldPath := path + "_old"
+
+	err = os.Remove(oldPath)
+	if err != nil && !os.IsNotExist(err) {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = os.Rename(path, oldPath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = copyFile(tmpFile, path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = os.Chmod(path, 0o755)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Firmware update successful"))
+	go func() {
+		time.Sleep(1 * time.Second)
+		exec.Command("systemctl", "poweroff").Run()
+	}()
+}
+
+func (ws *WebServer) restart(w http.ResponseWriter, r *http.Request) {
+	raspi.Restart(ws.cfg)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Restart sheduled"))
 }
 
 func (ws *WebServer) setCfg(w http.ResponseWriter, r *http.Request) {
@@ -263,6 +356,13 @@ func (ws *WebServer) indexHandler(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(data)
 }
 
+func (ws *WebServer) log(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux := http.NewServeMux()
 	webFS, err := fs.Sub(webFiles, "web")
@@ -283,7 +383,11 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux.HandleFunc("GET /getcfg", ws.getCfg)
 	mux.HandleFunc("GET /update", ws.getUpdate)
 	mux.HandleFunc("POST /setcfg", ws.setCfg)
+	mux.HandleFunc("POST /firmwareupdate", ws.fwUpdate)
+	mux.HandleFunc("GET /restart", ws.restart)
+
 	handler := ws.auth(mux)
+	handler = ws.log(handler)
 
 	ws.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", ws.port),
@@ -305,7 +409,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 			_, password, ok := r.BasicAuth()
 
 			realm := fmt.Sprintf("Basic realm=\"%s\"", ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_NAME, cfg.DEF_NAME))
-			if !ok || !ws.checkPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
+			if !ok || !helper.CheckPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
 				w.Header().Set("WWW-Authenticate", realm)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
@@ -313,51 +417,4 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func (ws *WebServer) checkPassword(password, encodedHash string) bool {
-	parts := strings.Split(encodedHash, "$")
-	if len(parts) != 6 {
-		return false
-	}
-
-	if parts[1] != "argon2id" || parts[2] != "v=19" {
-		return false
-	}
-
-	// m=65536,t=1,p=4
-	params := strings.Split(parts[3], ",")
-	if len(params) != 3 {
-		return false
-	}
-
-	memory, err := strconv.ParseUint(strings.TrimPrefix(params[0], "m="), 10, 32)
-	if err != nil {
-		return false
-	}
-
-	iterations, err := strconv.ParseUint(strings.TrimPrefix(params[1], "t="), 10, 32)
-	if err != nil {
-		return false
-	}
-
-	parallelism, err := strconv.ParseUint(strings.TrimPrefix(params[2], "p="), 10, 8)
-	if err != nil {
-		return false
-	}
-
-	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
-	if err != nil {
-		return false
-	}
-
-	expectedHash, err := base64.RawStdEncoding.DecodeString(parts[5])
-	if err != nil {
-		return false
-	}
-
-	actualHash := argon2.IDKey([]byte(password), salt, uint32(iterations),
-		uint32(memory), uint8(parallelism), uint32(len(expectedHash)))
-
-	return subtle.ConstantTimeCompare(actualHash, expectedHash) == 1
 }

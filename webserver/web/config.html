@@ -189,6 +189,26 @@
 							</div>
 							<div class="cfg_table_cell">
 								<div class="inputblock">
+									<span class="label">Pressure filter constant 2<br/>[0.0 - 1.0]</span><span id="old_p_fc2"></span><br/>
+									<input class="inputfield" type="number" id="p_fc" name="p_fc" step="0.001" min="0.0" max="1.0" list="p_fcs2" value="0.01">
+									<datalist id="p_fcs">
+										<option value="0.001">
+										<option value="0.002">
+										<option value="0.003">
+										<option value="0.004">
+										<option value="0.005">
+										<option value="0.006">
+										<option value="0.007">
+										<option value="0.008">
+										<option value="0.009">
+										<option value="0.01">
+									</datalist>
+								</div>
+							</div>
+						</div>
+						<div class="cfg_table_row">
+							<div class="cfg_table_cell">
+								<div class="inputblock">
 									<span class="label">Height above<br/>sea level [m]</span><span id="old_height"></span><br/>
 									<input class="inputfield" type="number" id="height" name="height" step="1" min="0.0" max="6000" list="heights" value="515">
 									<datalist id="heights">
@@ -211,18 +231,12 @@
 									</datalist>
 								</div>
 							</div>
-						</div>
-						<div class="cfg_table_row">
-							<div class="cfg_table_cell">
-								<div class="inputblock">
-									<span class="label">Name</span><br/>
-									<input class="inputfield_text" type="text" id="name" name="name" maxlength="32" size="13">
-								</div>
-							</div>
-							<div class="cfg_table_cell">
-								<div class="inputblock">
-									<span class="label">DNS Name</span><br/>
-									<input class="inputfield_text" type="text" id="dns_name" name="dns_name" maxlength="32" size="13">
+							<div class="cfg_table_row">
+								<div class="cfg_table_cell">
+									<div class="inputblock">
+										<span class="label">Name</span><br/>
+										<input class="inputfield_text" type="text" id="name" name="name" maxlength="32" size="13">
+									</div>
 								</div>
 							</div>
 						</div>

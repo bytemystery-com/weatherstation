@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"weatherd/cfg"
 	"weatherd/data"
 	"weatherd/filter"
 	"weatherd/i2c"
+	"weatherd/raspi"
+	"weatherd/sd"
 	"weatherd/sensors"
 	"weatherd/webserver"
 )
@@ -56,20 +59,17 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 var callBacks WebCallbacksImpl
 
 func main() {
-	var config *cfg.Cfg
-	config, err := cfg.NewCfg("weatherd.cfg", func() {
-		Data.F_lux.SetFilterConstant(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC))
-		Data.F_lux2.SetFilterConstant(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2))
+	cfgFile := os.Getenv("WEATHERD_INI_FILE")
+	if cfgFile == "" {
+		cfgFile = cfg.DEF_CFG_FILE
+	}
+	var err error
+	Data.Config, err = cfg.NewCfg(cfgFile, func() {
+		Data.F_lux.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC))
+		Data.F_lux2.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2))
 	})
 	if err != nil {
 		return
-	}
-	config.SetDeaultCfg()
-	// cfg.SetFloatValue("filterdata", "filter_constant_t", DEF_TEMPERATURE_FC, "Temperatur filter")
-
-	err = config.Save()
-	if err != nil {
-		log.Printf("%s", err)
 	}
 
 	bus, _ := i2c.NewI2c(1)
@@ -80,27 +80,55 @@ func main() {
 	Data.Veml7700 = sensors.NewVeml7700(bus, true, true)
 	Data.Veml7700.Start(1000 * time.Millisecond)
 
-	Data.F_lux, err = filter.NewAvgFilter(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC), 0)
-	Data.F_lux2, err = filter.NewAvgFilter(config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2), 0)
-	log.Printf("l2: %f", config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2))
+	Data.F_lux, err = filter.NewAvgFilter(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L, cfg.DEF_LUX_FC), 0)
+	if err != nil {
+		return
+	}
+	Data.F_lux2, err = filter.NewAvgFilter(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_L2, cfg.DEF_LUX_FC2), 0)
+	if err != nil {
+		return
+	}
+	Data.SdData, err = sd.NewSdData(Data.Config)
+	if err != nil {
+		return
+	}
 
-	Data.WebServer = webserver.NewWebServer(8080, callBacks, config)
+	Data.WebServer = webserver.NewWebServer(8080, callBacks, Data.Config)
 	webError := make(chan error, 1)
 	Data.WebServer.StartWebServer(webError)
 
-	time.Sleep(1000 * time.Millisecond)
-	for {
-		time.Sleep(1000 * time.Millisecond)
-		lux, _, _, isValid := Data.Veml7700.GetData()
-		if isValid {
-			Data.F_lux.Add(lux)
-			Data.F_lux2.Add(lux)
-		}
-
-		log.Printf("Lux: %.2f, Lux2: %.2f", Data.F_lux.GetValue(), Data.F_lux2.GetValue())
-	}
+	go doMeasure()
+	go doSd()
 
 	<-webError
 
 	fmt.Println("Exit")
+}
+
+func doMeasure() {
+	for !raspi.RebbotRequested.Load() {
+		time.Sleep(time.Duration(Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_MEASURE_INTERVAL, cfg.DEF_MEASURE_INTERVAL)) * time.Millisecond)
+		lux, _, _, isValid := Data.Veml7700.GetData()
+		if isValid {
+			Data.F_lux.Add(lux)
+			Data.F_lux2.Add(lux)
+			log.Printf("Lux: %.2f, Lux2: %.2f", Data.F_lux.GetValue(), Data.F_lux2.GetValue())
+		}
+	}
+}
+
+func doSd() {
+	sdEntry := sd.SdDataEntry{}
+	valid_l1 := false
+	valid_l2 := false
+	for !raspi.RebbotRequested.Load() {
+		sdEntry.L_1, valid_l1 = Data.F_lux.GetValueExt()
+		sdEntry.L_2, valid_l2 = Data.F_lux2.GetValueExt()
+		// sdEntry.E_2, _ = Data.Bmp581.GetError()
+		sdEntry.E_3, _ = Data.Veml7700.GetError()
+		if valid_l1 && valid_l2 {
+			Data.SdData.WriteEntry(&sdEntry)
+		}
+		time.Sleep(time.Duration(Data.Config.GetIntValue(cfg.SECTION_DATA, cfg.KEY_DATA_INTERVAL, cfg.DEF_DATA_INTERVAL)) * time.Second)
+	}
 }

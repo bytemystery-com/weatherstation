@@ -258,12 +258,12 @@ function doPeriodic()
 				
 				if (json.status.uptime !== undefined)
 				{
-					if ((tmp = document.getElementById("summary_uptime")))
+					if ((tmp = document.getElementById("sysstat_uptime")))
 						tmp.textContent = json.status.uptime;
 				}
 				else
 				{
-					if ((tmp = document.getElementById("summary_tr_uptime")))
+					if ((tmp = document.getElementById("sysstat_tr_uptime")))
 						tmp.style.display = 'none';
 				}
 				
@@ -318,13 +318,12 @@ function doPeriodic()
 
 				if (json.status.sd !== undefined)
 				{
-					if ((tmp = document.getElementById("summary_sd")))
-//						tmp.textContent = kB2Str(json.status.sd.free) + " / " + kB2Str(json.status.sd.total) + " / " + kB2Str(json.status.sd.size);
+					if ((tmp = document.getElementById("sysstat_sd")))
 						tmp.textContent = kB2Str(json.status.sd.free) + " / " + kB2Str(json.status.sd.total);
 				}
 				else
 				{
-					if ((tmp = document.getElementById("summary_tr_sd")))
+					if ((tmp = document.getElementById("sysstat_tr_sd")))
 						tmp.style.display = 'none';
 				}
 				

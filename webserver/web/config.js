@@ -54,12 +54,12 @@ function doGetValues()
 				setValue("d_fc", Number(json.filterdata.d_fc).toFixed(5));
 				setValue("d_fc2", Number(json.filterdata.d_fc2).toFixed(5));
 				setValue("p_fc", Number(json.filterdata.p_fc).toFixed(5));
+				setValue("p_fc2", Number(json.filterdata.p_fc2).toFixed(5));
 				setValue("l_fc", Number(json.filterdata.l_fc).toFixed(5));
 				setValue("l_fc2", Number(json.filterdata.l_fc2).toFixed(5));
 				setValue("height", Number(json.general.height).toFixed(0));
 				setCheck("use_pass", json.general.use_pass);
 				setValue("name", json.general.name);
-				setValue("dns_name", json.general.dns_name);
 				document.title = json.general.name;
 			
 				doPass();
@@ -105,6 +105,7 @@ function doSetValues(form)
 	prepareData(data, "d_fc", null);
 	prepareData(data, "d_fc2", null);
 	prepareData(data, "p_fc", null);
+	prepareData(data, "p_fc2", null);
 	prepareData(data, "l_fc", null);
 	prepareData(data, "l_fc2", null);
 	prepareData(data, "height", null);
@@ -112,7 +113,6 @@ function doSetValues(form)
 	prepareDataFromCheckBox(data, "use_pass", "use_pass");
 	prepareDataFromString(data, "pass", "pass");
 	prepareDataFromString(data, "name", "name");
-	prepareDataFromString(data, "dns_name", "dns_name");
 	
 	request.send(data);
 	

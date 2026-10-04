@@ -1,0 +1,12 @@
+[Unit]
+Description=Weather Station
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/weatherd.env
+ExecStart=/usr/local/bin/weatherd
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
