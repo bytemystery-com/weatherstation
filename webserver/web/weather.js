@@ -268,28 +268,54 @@ function doPeriodic()
 				}
 				
 				if (tmp = document.getElementById("summary_temperature"))
-					tmp.textContent = json.sensors[1].temperature + " (" + json.sensors[0].temperature + ") °C";
+					tmp.textContent = json.sensors[1].temperature.toFixed(1) + " (" + json.sensors[0].temperature.toFixed(1) + ") °C";
 				if (tmp = document.getElementById("summary_temperature2"))
-					tmp.textContent = json.sensors[1].temperature2 + " (" + json.sensors[0].temperature2 + ") °C";
+					tmp.textContent = json.sensors[1].temperature2.toFixed(1) + " (" + json.sensors[0].temperature2.toFixed(1) + ") °C";
 				if (tmp = document.getElementById("summary_humidity"))
-					tmp.textContent = json.sensors[1].humidity + " % rel";
+					tmp.textContent = json.sensors[1].humidity.toFixed(1) + " % rel";
 				if (tmp = document.getElementById("summary_humidity2"))
-					tmp.textContent = json.sensors[1].humidity2 + " % rel";
+					tmp.textContent = json.sensors[1].humidity2.toFixed(1) + " % rel";
 				if (tmp = document.getElementById("summary_dewpoint"))
-					tmp.textContent = json.sensors[1].dewpoint + " °C";
+					tmp.textContent = json.sensors[1].dewpoint.toFixed(1) + " °C";
 				if (tmp = document.getElementById("summary_dewpoint2"))
-					tmp.textContent = json.sensors[1].dewpoint2 + " °C";
+					tmp.textContent = json.sensors[1].dewpoint2.toFixed(1) + " °C";
 				if (tmp = document.getElementById("summary_pressure"))
-					tmp.textContent = json.sensors[0].pressure + " / " + json.sensors[0].pressure_normal + " hPa";
+					tmp.textContent = json.sensors[0].pressure.toFixed(0) + " / " + json.sensors[0].pressure_normal.toFixed(1) + " hPa";
 				if (tmp = document.getElementById("summary_pressure_trend"))
-					tmp.textContent = json.status.pressure_trend_3 + " / " + json.status.pressure_trend_1 + " hPa/h";
+					tmp.textContent = json.status.pressure_trend_3.toFixed(2) + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
 				if (tmp = document.getElementById("summary_lux"))
-					tmp.textContent = json.sensors[2].lux + " lx";
+					tmp.textContent = json.sensors[2].lux.toFixed(1) + " lx";
 				if (tmp = document.getElementById("summary_lux2"))
-					tmp.textContent = json.sensors[2].lux2 + " lx";
+					tmp.textContent = json.sensors[2].lux2.toFixed(1) + " lx";
 				if (tmp = document.getElementById("summary_errors"))
 					tmp.textContent = json.status.errors + " / " + json.status.resets;
 				
+				if (json.status.raspi !== undefined)
+				{
+					if (tmp = document.getElementById("sysstat_fan"))
+						tmp.textContent = json.status.raspi.fan + " rpm";
+					if (tmp = document.getElementById("sysstat_cpu"))
+						tmp.textContent = (json.status.raspi.cpu/10.0).toFixed(1) + " %";
+					if (tmp = document.getElementById("sysstat_temperature"))
+						tmp.textContent = (json.status.raspi.temp/10.0).toFixed(1) + " °C";
+					if (tmp = document.getElementById("sysstat_5volt"))
+						tmp.textContent = (json.status.raspi.voltage_5/1000.0).toFixed(2) + " V";
+					if (tmp = document.getElementById("sysstat_serial"))
+						tmp.textContent = json.status.raspi.serial;
+					if (tmp = document.getElementById("sysstat_throttle"))
+						tmp.textContent = "0x" + (json.status.raspi.throttle.toString(16).padStart(8, "0"));
+					if (tmp = document.getElementById("sysstat_version"))
+					{
+						const major = (json.status.raspi.version >> 8) & 0xFF;
+						const minor = json.status.raspi.version & 0xFF;
+						tmp.textContent = major + "." + minor;
+					}
+					if (tmp = document.getElementById("sysstat_ram"))
+					{
+						tmp.textContent = kB2Str(json.status.raspi.ram_u) + " / " + kB2Str(json.status.raspi.ram_t);
+					}
+				}
+
 				if (json.status.sd !== undefined)
 				{
 					if ((tmp = document.getElementById("summary_sd")))

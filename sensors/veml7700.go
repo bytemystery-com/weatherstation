@@ -93,6 +93,8 @@ type veml7700ShmData struct {
 	white         atomic.Uint32 // white*100
 	overrun       atomic.Bool   // ausserhalb spec
 	whiteAlsRatio atomic.Uint32 // ratio*1000
+	errors        atomic.Uint32
+	isValid       atomic.Bool
 }
 
 type Veml7700 struct {
@@ -110,12 +112,14 @@ func NewVeml7700(bus *i2c.I2c, doAdjust, doHeuristicCorrection bool) *Veml7700 {
 	if err != nil {
 		return nil
 	}
-	return &Veml7700{
+	veml := Veml7700{
 		dev:                   dev,
 		state:                 veml7700States_init,
 		doAdjust:              doAdjust,
 		doHeuristicCorrection: doHeuristicCorrection,
 	}
+	veml.shm.isValid.Store(false)
+	return &veml
 }
 
 // Interface for web server
@@ -123,8 +127,12 @@ func (veml *Veml7700) GetName() string {
 	return "VEML7700"
 }
 
-func (veml *Veml7700) GetData() (float32, float32) {
-	return float32(veml.shm.lux.Load() / 100), float32(veml.shm.lux.Load() / 100)
+func (veml *Veml7700) GetData() (float32, float32, uint32, bool) {
+	return float32(veml.shm.lux.Load() / 100), float32(veml.shm.lux.Load() / 100), veml.shm.errors.Load(), veml.shm.isValid.Load()
+}
+
+func (veml *Veml7700) GetError() (uint32, bool) {
+	return veml.shm.errors.Load(), veml.shm.isValid.Load()
 }
 
 func (veml *Veml7700) Start(measureCycle time.Duration) {
@@ -397,7 +405,6 @@ func (veml *Veml7700) measure() (float32, float32, uint16, bool, uint16, error) 
 		gainFactor = 2.0
 	case VEML7700_GAIN_08:
 		gainFactor = 1.0
-
 	}
 
 	switch intTime {
@@ -463,6 +470,8 @@ func (veml *Veml7700) loop() {
 		case veml7700States_init:
 			err := veml.init()
 			if err != nil {
+				veml.shm.errors.Add(1)
+				veml.shm.isValid.Store(false)
 				log.Printf("VEML7700 init failed with %v", err)
 			} else {
 				veml.state = veml7700States_cfg
@@ -473,6 +482,8 @@ func (veml *Veml7700) loop() {
 			err := veml.configure(VEML7700_DEFAULT_CFG)
 			if err != nil {
 				veml.state = veml7700States_init
+				veml.shm.errors.Add(1)
+				veml.shm.isValid.Store(false)
 				log.Printf("VEML7700 configure failed with %v", err)
 			} else {
 				veml.state = veml7700States_measure
@@ -483,6 +494,8 @@ func (veml *Veml7700) loop() {
 			start = time.Now()
 			lux, ratio, luxRaw, overrun, cfg, err := veml.measure()
 			if err != nil {
+				veml.shm.errors.Add(1)
+				veml.shm.isValid.Store(false)
 				veml.state = veml7700States_init
 				log.Printf("VEML7700 measure failed with %v", err)
 			} else {
@@ -490,19 +503,23 @@ func (veml *Veml7700) loop() {
 				veml.shm.lux.Store(uint32(lux * 100))
 				veml.shm.overrun.Store(overrun)
 				veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))
+				veml.shm.isValid.Store(true)
 
 				if veml.doAdjust {
-					veml.adjust(luxRaw, cfg)
+					_, err := veml.adjust(luxRaw, cfg)
+					if err != nil {
+						veml.shm.errors.Add(1)
+						veml.shm.isValid.Store(false)
+					}
 				}
-
-				duration = time.Since(start)
-				// log.Printf("VEML7700 measure cycle time %d µsec", duration.Microseconds())
-				if duration < veml.measureCycle {
-					sleep = veml.measureCycle - duration
-				} else {
-					log.Printf("VEML7700 measure tooks too long %d nsec", duration)
-					sleep = veml.measureCycle
-				}
+			}
+			duration = time.Since(start)
+			// log.Printf("VEML7700 measure cycle time %d µsec", duration.Microseconds())
+			if duration < veml.measureCycle {
+				sleep = veml.measureCycle - duration
+			} else {
+				log.Printf("VEML7700 measure tooks too long %d nsec", duration)
+				sleep = veml.measureCycle
 			}
 		}
 	}

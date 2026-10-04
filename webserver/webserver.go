@@ -15,14 +15,23 @@ import (
 	"time"
 
 	"weatherd/cfg"
+	"weatherd/raspi"
 
 	"golang.org/x/crypto/argon2"
 )
 
+type HasErrors interface {
+	GetErrors() uint
+}
+
 type WebData struct {
 	SensorName string `json:"name"`
-	Errors     int    `json:"errors"`
+	Errors     uint   `json:"errors"`
 	Valid      bool   `json:"valid"`
+}
+
+func (w *WebData) GetErrors() uint {
+	return w.Errors
 }
 
 type WebDataLux struct {
@@ -39,9 +48,20 @@ type WebDataPressure struct {
 	PressureNormal float32 `json:"pressure_normal"`
 }
 
+type WebDataHumidity struct {
+	WebData
+	Temperature  float32 `json:"temperature"`
+	Temperature2 float32 `json:"temperature2"`
+	Humidity     float32 `json:"humidity"`
+	Humidity2    float32 `json:"humidity2"`
+	DewPoint     float32 `json:"dewpoint"`
+	DewPoint2    float32 `json:"dewpoint2"`
+}
+
 type WebDataAll struct {
 	Lux      WebDataLux
 	Pressure WebDataPressure
+	Humidity WebDataHumidity
 }
 
 type WebCallBacks interface {
@@ -127,17 +147,29 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 		SectorSize  uint   `json:"sector_size"`
 	}
 
+	type raspiStatus struct {
+		Fan         int    `json:"fan"`
+		CpuUsage    int    `json:"cpu"`
+		Temperature int    `json:"temp"`
+		Voltage_5v  int    `json:"voltage_5"`
+		Serial      string `json:"serial"`
+		Version     uint16 `json:"version"`
+		Throttle    uint32 `json:"throttle"`
+		Ram_used    uint32 `json:"ram_u"`
+		Ram_total   uint32 `json:"ram_t"`
+	}
 	type status struct {
-		Version                string  `json:"version"`
-		Uptime                 string  `json:"uptime"`
-		PressureTrend1         float32 `json:"pressure_trend_1"`
-		PressureTrend3         float32 `json:"pressure_trend_3"`
-		PressureTrend1Goodness float32 `json:"pressure_trend_1_goodness"`
-		PressureTrend3Goodness float32 `json:"pressure_trend_3_goodness"`
-		Time                   timed   `json:"time"`
-		Sd                     sd      `json:"sd"`
-		Resets                 int     `json:"resets"`
-		Errors                 int     `json:"errors"`
+		Version                string      `json:"version"`
+		Uptime                 string      `json:"uptime"`
+		PressureTrend1         float32     `json:"pressure_trend_1"`
+		PressureTrend3         float32     `json:"pressure_trend_3"`
+		PressureTrend1Goodness float32     `json:"pressure_trend_1_goodness"`
+		PressureTrend3Goodness float32     `json:"pressure_trend_3_goodness"`
+		Time                   timed       `json:"time"`
+		Sd                     sd          `json:"sd"`
+		Resets                 uint        `json:"resets"`
+		Errors                 uint        `json:"errors"`
+		RaspiStatus            raspiStatus `json:"raspi"`
 	}
 
 	type dataJson struct {
@@ -147,6 +179,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	}
 	list := make([]any, 0, 3)
 	list = append(list, data.Pressure)
+	list = append(list, data.Humidity)
 	list = append(list, data.Lux)
 
 	var t timed
@@ -160,6 +193,22 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	t.Sec = now.Second()
 	t.Dst = ws.isDST(now)
 
+	var errors uint = 0
+	for _, item := range list {
+		data, ok := item.(HasErrors)
+		if ok {
+			errors += data.GetErrors()
+		}
+	}
+	raspiRpm, _ := raspi.GetFanRPM()
+	raspiCpu, _ := raspi.GetCpuUsage()
+	raspiTemp, _ := raspi.GetTemperature()
+	raspiVoltage, _ := raspi.Get5VVoltage()
+	raspiVersion, _ := raspi.GetSysVersion()
+	raspiThrottle, _ := raspi.GetThrottled()
+	raspiSerial, _ := raspi.GetSerial()
+	raspiRamUsed, raspiRamTotal, _ := raspi.GetRam()
+
 	dj := dataJson{
 		Config: config{
 			UpdateInterval: ws.cfg.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_UPDATE_INTERVAL, cfg.DEF_UPDATE_INTERVAL),
@@ -170,6 +219,18 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 			Time:           t,
 			PressureTrend1: 0.1,
 			PressureTrend3: -0.3,
+			Errors:         errors,
+			RaspiStatus: raspiStatus{
+				Fan:         raspiRpm,
+				CpuUsage:    int(raspiCpu),
+				Temperature: raspiTemp / 100,
+				Voltage_5v:  raspiVoltage,
+				Serial:      raspiSerial,
+				Version:     raspiVersion,
+				Throttle:    raspiThrottle,
+				Ram_used:    raspiRamUsed,
+				Ram_total:   raspiRamTotal,
+			},
 		},
 		Sensors: list,
 	}
@@ -223,8 +284,6 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux.HandleFunc("GET /update", ws.getUpdate)
 	mux.HandleFunc("POST /setcfg", ws.setCfg)
 	handler := ws.auth(mux)
-
-	http.ListenAndServe(":8080", handler)
 
 	ws.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", ws.port),

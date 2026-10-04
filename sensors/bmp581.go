@@ -160,6 +160,8 @@ const (
 type bmp851ShmData struct {
 	temperature atomic.Int32  // temperature*100
 	pressure    atomic.Uint32 // druck*10
+	errors      atomic.Uint32
+	isValid     atomic.Bool
 }
 
 type Bmp581 struct {
@@ -175,11 +177,13 @@ func NewBmp581(addr uint16, bus *i2c.I2c) *Bmp581 {
 	if err != nil {
 		return nil
 	}
-	return &Bmp581{
+	bmp := Bmp581{
 		dev:          dev,
 		state:        bmp581States_init,
 		waitDuration: time.Duration(10 * time.Millisecond),
 	}
+	bmp.shm.isValid.Store(false)
+	return &bmp
 }
 
 // Interface for web server
@@ -419,13 +423,15 @@ func (bmp *Bmp581) loop() {
 	var start time.Time
 	var duration time.Duration
 	sleep := bmp.measureCycle
-	defaultSleep := time.Duration(1 * time.Millisecond)
+	defaultSleep := time.Duration(250 * time.Millisecond)
 	for {
 		time.Sleep(sleep)
 		switch bmp.state {
 		case bmp581States_init:
 			err := bmp.init()
 			if err != nil {
+				bmp.shm.errors.Add(1)
+				bmp.shm.isValid.Store(false)
 				log.Printf("BMP581 init failed with %v", err)
 			}
 			bmp.state = bmp581States_cfg
@@ -435,6 +441,8 @@ func (bmp *Bmp581) loop() {
 			err := bmp.configure()
 			if err != nil {
 				bmp.state = bmp581States_init
+				bmp.shm.errors.Add(1)
+				bmp.shm.isValid.Store(false)
 				log.Printf("BMP581 configure failed with %v", err)
 			}
 			bmp.state = bmp581States_measure
@@ -446,9 +454,13 @@ func (bmp *Bmp581) loop() {
 			if err != nil {
 				bmp.state = bmp581States_init
 				log.Printf("BMP581 measure failed with %v", err)
+				bmp.shm.errors.Add(1)
+				bmp.shm.isValid.Store(false)
+			} else {
+				bmp.shm.temperature.Store(int32(temp * 100))
+				bmp.shm.pressure.Store(uint32(pressure * 10))
+				bmp.shm.isValid.Store(true)
 			}
-			bmp.shm.temperature.Store(int32(temp * 100))
-			bmp.shm.pressure.Store(uint32(pressure * 10))
 			duration = time.Since(start)
 			if duration < bmp.measureCycle {
 				sleep = bmp.measureCycle - duration

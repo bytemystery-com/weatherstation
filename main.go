@@ -20,12 +20,13 @@ type WebCallbacksImpl struct{}
 var _ webserver.WebCallBacks = (*WebCallbacksImpl)(nil)
 
 func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
+	luxErrCount, luxIsValid := Data.Veml7700.GetError()
 	data := webserver.WebDataAll{
 		Lux: webserver.WebDataLux{
 			WebData: webserver.WebData{
 				SensorName: Data.Veml7700.GetName(),
-				Errors:     0,
-				Valid:      true,
+				Errors:     uint(luxErrCount),
+				Valid:      luxIsValid,
 			},
 			Lux:  Data.F_lux.GetValue(),
 			Lux2: Data.F_lux2.GetValue(),
@@ -36,8 +37,17 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 				Errors:     0,
 				Valid:      true,
 			},
-			Pressure:  0,
-			PressureNormal:  0,
+			Pressure:       0,
+			PressureNormal: 0,
+		},
+		Humidity: webserver.WebDataHumidity{
+			WebData: webserver.WebData{
+				SensorName: "",
+				Errors:     0,
+				Valid:      true,
+			},
+			Humidity:  0,
+			Humidity2: 0,
 		},
 	}
 	return &data
@@ -81,9 +91,11 @@ func main() {
 	time.Sleep(1000 * time.Millisecond)
 	for {
 		time.Sleep(1000 * time.Millisecond)
-		lux, _ := Data.Veml7700.GetData()
-		Data.F_lux.Add(lux)
-		Data.F_lux2.Add(lux)
+		lux, _, _, isValid := Data.Veml7700.GetData()
+		if isValid {
+			Data.F_lux.Add(lux)
+			Data.F_lux2.Add(lux)
+		}
 
 		log.Printf("Lux: %.2f, Lux2: %.2f", Data.F_lux.GetValue(), Data.F_lux2.GetValue())
 	}

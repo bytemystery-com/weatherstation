@@ -251,3 +251,22 @@ legend
 	position: relative;
 	margin-top: 5px;
 }
+
+.sysstat_box
+{
+	float: left;
+	width: 25em;
+	margin-left: 20px;
+	margin-top: 10px;
+}
+
+.sysstat
+{
+	overflow: auto;
+	height: 18em;
+}
+
+.container
+{
+	float: left;
+}
