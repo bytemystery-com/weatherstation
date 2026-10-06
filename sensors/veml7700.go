@@ -83,7 +83,7 @@ const (
 type veml7700States int
 
 const (
-	veml7700States_init = iota
+	veml7700States_init veml7700States = iota
 	veml7700States_cfg
 	veml7700States_measure
 )
@@ -128,7 +128,7 @@ func (veml *Veml7700) GetName() string {
 }
 
 func (veml *Veml7700) GetData() (float32, float32, uint32, bool) {
-	return float32(veml.shm.lux.Load() / 100), float32(veml.shm.lux.Load() / 100), veml.shm.errors.Load(), veml.shm.isValid.Load()
+	return float32(veml.shm.lux.Load() / 100.0), float32(veml.shm.lux.Load() / 100.0), veml.shm.errors.Load(), veml.shm.isValid.Load()
 }
 
 func (veml *Veml7700) GetError() (uint32, bool) {
@@ -351,7 +351,7 @@ func (veml *Veml7700) adjust(raw, cfg uint16) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		log.Printf("VEML7700, adjust from G: %d, I: %d to G: %d, I: %d", GOld, IOld, G, I)
+		log.Printf("VEML7700: adjust from G: %d, I: %d to G: %d, I: %d", GOld, IOld, G, I)
 		err = veml.configure(g | i)
 		if err != nil {
 			return false, err
@@ -472,7 +472,7 @@ func (veml *Veml7700) loop() {
 			if err != nil {
 				veml.shm.errors.Add(1)
 				veml.shm.isValid.Store(false)
-				log.Printf("VEML7700 init failed with %v", err)
+				log.Printf("VEML7700: init failed with %v", err)
 			} else {
 				veml.state = veml7700States_cfg
 			}
@@ -484,7 +484,7 @@ func (veml *Veml7700) loop() {
 				veml.state = veml7700States_init
 				veml.shm.errors.Add(1)
 				veml.shm.isValid.Store(false)
-				log.Printf("VEML7700 configure failed with %v", err)
+				log.Printf("VEML7700: configure failed with %v", err)
 			} else {
 				veml.state = veml7700States_measure
 			}
@@ -497,7 +497,7 @@ func (veml *Veml7700) loop() {
 				veml.shm.errors.Add(1)
 				veml.shm.isValid.Store(false)
 				veml.state = veml7700States_init
-				log.Printf("VEML7700 measure failed with %v", err)
+				log.Printf("VEML7700: measure failed with %v", err)
 			} else {
 				// log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
 				veml.shm.lux.Store(uint32(lux * 100))
@@ -518,7 +518,7 @@ func (veml *Veml7700) loop() {
 			if duration < veml.measureCycle {
 				sleep = veml.measureCycle - duration
 			} else {
-				log.Printf("VEML7700 measure tooks too long %d nsec", duration)
+				log.Printf("VEML7700: measure tooks too long %d nsec", duration)
 				sleep = veml.measureCycle
 			}
 		}

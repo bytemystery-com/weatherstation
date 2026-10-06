@@ -1,3 +1,27 @@
+// Copyright (c) 2026 Reiner Pröls
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+// SPDX-License-Identifier: MIT
+//
+// Author: Reiner Pröls
+
 package cfg
 
 import (
@@ -41,32 +65,37 @@ const (
 	KEY_FILTER_CONST_L   = "filter_constant_l"
 	KEY_FILTER_CONST_L2  = "filter_constant_l2"
 
-	SECTION_GENERAL              = "general"
-	KEY_GENERAL_HEIGHT           = "height"
-	KEY_GENERAL_NAME             = "Name"
-	KEY_GENERAL_USE_PASSWORD     = "UsePassword"
-	KEY_GENERAL_PASSWORD         = "Password"
-	KEY_GENERAL_UPDATE_INTERVAL  = "UpdateInterval"
-	KEY_GENERAL_MEASURE_INTERVAL = "MeasureInterval"
+	SECTION_GENERAL                   = "general"
+	KEY_GENERAL_HEIGHT                = "height"
+	KEY_GENERAL_NAME                  = "Name"
+	KEY_GENERAL_USE_PASSWORD          = "UsePassword"
+	KEY_GENERAL_PASSWORD              = "Password"
+	KEY_GENERAL_UPDATE_INTERVAL       = "UpdateInterval"
+	KEY_GENERAL_MEASURE_INTERVAL      = "MeasureInterval"
+	KEY_GENERAL_HEATER_INTERVAL       = "HeaterInterval"
+	KEY_GENERAL_HEATER_MAINT_INTERVAL = "HeaterMaintInterval"
 
 	SECTION_SYSTEM               = "system"
 	KEY_SYSTEM_RESTART_POFF_TIME = "PoweroffTime"
 
 	SECTION_RUN    = "run"
 	KEY_RUN_REBOOT = "Reboots"
+	KEY_RUN_HEATER = "LastHeater"
 
 	SECTION_DATA      = "data"
 	KEY_DATA_FOLDER   = "Folder"
 	KEY_DATA_INTERVAL = "Interval"
 
-	DEF_HEIGHT            = 515
-	DEF_NAME              = "Weather Station"
-	DEF_USE_PASSWORD      = true
-	DEF_UPDATE_INTERVAL   = 5000
-	DEF_RESTART_POFF_TIME = 60 // sec
-	DEF_DATA_FOLDER       = "/data"
-	DEF_DATA_INTERVAL     = 300  // sec
-	DEF_MEASURE_INTERVAL  = 1000 // msec
+	DEF_HEIGHT                = 515
+	DEF_NAME                  = "Weather Station"
+	DEF_USE_PASSWORD          = true
+	DEF_UPDATE_INTERVAL       = 5000
+	DEF_RESTART_POFF_TIME     = 60 // sec
+	DEF_DATA_FOLDER           = "/data"
+	DEF_DATA_INTERVAL         = 300  // sec
+	DEF_MEASURE_INTERVAL      = 1000 // msec
+	DEF_HEATER_INTERVAL       = 60   // min
+	DEF_HEATER_MAINT_INTERVAL = 168  // Hours
 )
 
 type Cfg struct {
@@ -118,6 +147,12 @@ func (c *Cfg) GetIntValue(section, key string, def int) int {
 	return c.ini.Section(section).Key(key).MustInt(def)
 }
 
+func (c *Cfg) GetInt64Value(section, key string, def int64) int64 {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.ini.Section(section).Key(key).MustInt64(def)
+}
+
 func (c *Cfg) GetStringValue(section, key string, def string) string {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -150,6 +185,15 @@ func (c *Cfg) SetIntValue(section, key string, value int, comment string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.ini.Section(section).Key(key).SetValue(strconv.Itoa(value))
+	if comment != "" {
+		c.ini.Section(section).Key(key).Comment = comment
+	}
+}
+
+func (c *Cfg) SetInt64Value(section, key string, value int64, comment string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.ini.Section(section).Key(key).SetValue(strconv.FormatInt(value, 10))
 	if comment != "" {
 		c.ini.Section(section).Key(key).Comment = comment
 	}
@@ -192,6 +236,8 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_PASSWORD, "", "Password hash")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_UPDATE_INTERVAL, DEF_UPDATE_INTERVAL, "Main page update interval [msec]")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_MEASURE_INTERVAL, DEF_MEASURE_INTERVAL, "Measure interval [msec]")
+	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_INTERVAL, DEF_HEATER_INTERVAL, "Heater interval [min]")
+	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_MAINT_INTERVAL, DEF_HEATER_MAINT_INTERVAL, "Heater maintenance interval [hour]")
 
 	c.SetIntValue(SECTION_SYSTEM, KEY_SYSTEM_RESTART_POFF_TIME, DEF_RESTART_POFF_TIME, "Restart after restart command [sec]")
 
@@ -199,6 +245,7 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_DATA, KEY_DATA_INTERVAL, DEF_DATA_INTERVAL, "Interval for data write [sec]")
 
 	c.SetIntValue(SECTION_RUN, KEY_RUN_REBOOT, 0, "Number of reboots")
+	c.SetInt64Value(SECTION_RUN, KEY_RUN_HEATER, int64(0), "Last timestamp when heater was running")
 }
 
 func (c *Cfg) GetJson() []byte {

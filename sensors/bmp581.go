@@ -152,7 +152,7 @@ const (
 type bmp581States int
 
 const (
-	bmp581States_init = iota
+	bmp581States_init bmp581States = iota
 	bmp581States_cfg
 	bmp581States_measure
 )

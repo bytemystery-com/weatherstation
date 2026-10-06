@@ -262,8 +262,7 @@ legend
 
 .sysstat
 {
-	overflow: auto;
-	height: 22em;
+	display: table-cell;
 }
 
 .container

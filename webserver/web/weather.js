@@ -17,6 +17,9 @@ var graphs = new Array();
 var graph_p = new SVGGraph("p_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_p);
 
+var graph_p2 = new SVGGraph("p2_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
+graphs.push(graph_p2);
+
 var graph_t = new SVGGraph("t_", 0, 25, 0, 30, 24, 28, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_t);
 
@@ -88,6 +91,7 @@ function doLoadGraph()
 	);
 
 	graph_p.yScaleText = "Pressure [hPa]";
+	graph_p2.yScaleText = "Pressure (long) [hPa]";
 	graph_t.yScaleText = "Temperature [°C]";
 	graph_t2.yScaleText = "Temperature (long) [°C]";
 	graph_h.yScaleText = "Humidity [% rel]";
@@ -230,11 +234,11 @@ function doPeriodic()
 					var time_str = (json.status.time.hour < 10 ? "0" : "") + json.status.time.hour + ":" + (json.status.time.min < 10 ? "0" : "") + json.status.time.min + ":" + (json.status.time.sec < 10 ? "0" : "") + json.status.time.sec;
 					if ((tmp = document.getElementById("status_date")))
 						tmp.textContent = date_str;
-					if ((tmp = document.getElementById("summary_date")))
+					if ((tmp = document.getElementById("sysstat_date")))
 						tmp.textContent = date_str;
 					if ((tmp = document.getElementById("status_time")))
 						tmp.textContent = time_str;
-					if ((tmp = document.getElementById("summary_time")))
+					if ((tmp = document.getElementById("sysstat_time")))
 						tmp.textContent = time_str;
 				}
 				else
@@ -281,6 +285,8 @@ function doPeriodic()
 					tmp.textContent = json.sensors[1].dewpoint2.toFixed(1) + " °C";
 				if (tmp = document.getElementById("summary_pressure"))
 					tmp.textContent = json.sensors[0].pressure.toFixed(0) + " / " + json.sensors[0].pressure_normal.toFixed(1) + " hPa";
+				if (tmp = document.getElementById("summary_pressure2"))
+					tmp.textContent = json.sensors[0].pressure2.toFixed(0) + " / " + json.sensors[0].pressure2_normal.toFixed(1) + " hPa";
 				if (tmp = document.getElementById("summary_pressure_trend"))
 					tmp.textContent = json.status.pressure_trend_3.toFixed(2) + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
 				if (tmp = document.getElementById("summary_lux"))
@@ -513,6 +519,12 @@ function doPeriodicGraph()
 							if (graph == graph_p)
 							{
 								y = parseFloat(item.pn);
+								if (y < 960)
+									y = null;
+							}
+							else if (graph == graph_p2)
+							{
+								y = parseFloat(item.pn2);
 								if (y < 960)
 									y = null;
 							}
