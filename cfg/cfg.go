@@ -87,11 +87,11 @@ const (
 	KEY_DATA_FOLDER   = "Folder"
 	KEY_DATA_INTERVAL = "Interval"
 
-	DEF_HEIGHT                  = 515
+	DEF_HEIGHT                  = 522
 	DEF_NAME                    = "Weather Station"
 	DEF_USE_PASSWORD            = true
-	DEF_UPDATE_INTERVAL         = 5000
-	DEF_RESTART_POFF_TIME       = 60 // sec
+	DEF_UPDATE_INTERVAL         = 1000 // msec
+	DEF_RESTART_POFF_TIME       = 60   // sec
 	DEF_DATA_FOLDER             = "/data"
 	DEF_DATA_INTERVAL           = 300  // sec
 	DEF_MEASURE_INTERVAL        = 1000 // msec

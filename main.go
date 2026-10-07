@@ -26,7 +26,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"time"
@@ -241,7 +240,7 @@ func doMeasure() {
 			dp := float32(helper.DewPoint(float64(temperature), float64(humidity)))
 			Data.F_dp.Add(dp)
 			Data.F2_dp.Add(dp)
-			log.Printf("Temperature: %.1f, Humidity: %.1f, DewPoint: %.1f", Data.F_temp1.GetValue(), Data.F_humidity.GetValue(), Data.F_dp.GetValue())
+			// log.Printf("Temperature: %.1f, Humidity: %.1f, DewPoint: %.1f", Data.F_temp1.GetValue(), Data.F_humidity.GetValue(), Data.F_dp.GetValue())
 		}
 		// BMP581
 		temperatureP, pressure, isValidP := Data.Bmp581.GetData()
@@ -258,7 +257,7 @@ func doMeasure() {
 			Data.F2_pressureNormal.Add(float32(pressureNormal))
 			Data.F_temp2.Add(temperatureP)
 			Data.F2_temp2.Add(temperatureP)
-			log.Printf("TemperatureP: %.1f, Pressure: %.1f", Data.F_temp2.GetValue(), Data.F_pressure.GetValue()/100.0)
+			// log.Printf("TemperatureP: %.1f, Pressure: %.1f", Data.F_temp2.GetValue(), Data.F_pressure.GetValue()/100.0)
 		}
 	}
 }

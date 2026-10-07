@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Transparenter Hintergrund sorgt für perfekte Optik in Dark- & Light-Mode Browsers -->
+  
+  <!-- DIE SONNE -->
+  <!-- Sonnenkern -->
+  <circle cx="190" cy="190" r="85" fill="#FFC107" stroke="#FFA000" stroke-width="6" />
+  <!-- Sonnenstrahlen -->
+  <g stroke="#FFA000" stroke-width="16" stroke-linecap="round">
+    <line x1="190" y1="60" x2="190" y2="90" />
+    <line x1="190" y1="290" x2="190" y2="320" />
+    <line x1="60" y1="190" x2="90" y2="190" />
+    <line x1="290" y1="190" x2="320" y2="190" />
+    <line x1="98" y1="98" x2="119" y2="119" />
+    <line x1="261" y1="261" x2="282" y2="282" />
+    <line x1="261" y1="98" x2="282" y2="119" />
+    <line x1="98" y1="261" x2="119" y2="282" />
+  </g>
+
+  <!-- DIE WOLKE (Vordergrund, leicht versetzt für Tiefenwirkung) -->
+  <!-- Dunklere Schattierung hinten für 3D-Effekt -->
+  <path d="M430,410 H210 c-50,0 -90,-40 -90,-90 c0,-45,34,-83,79,-89 c11,-50,56,-86,109,-86 c45,0,84,26,102,64 c15,-8,31,-12,49,-12 c50,0,90,40,90,90 C540,369,509,410,430,410 z" fill="#B2EBF2" />
+  <!-- Helle Hauptwolke vorne -->
+  <path d="M415,410 H225 c-44,0 -80,-36 -80,-80 c0,-40,30,-73,70,-79 c10,-44,50,-76,97,-76 c40,0,74,23,90,57 c13,-7,28,-11,43,-11 c44,0,80,36,80,80 C495,374,468,410,415,410 z" fill="#E0F7FA" />
+</svg>
