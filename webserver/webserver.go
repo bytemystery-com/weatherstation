@@ -42,6 +42,7 @@ import (
 	"weatherd/cfg"
 	"weatherd/helper"
 	"weatherd/raspi"
+	"weatherd/sd"
 )
 
 type HasErrors interface {
@@ -106,13 +107,15 @@ type WebServer struct {
 	port      int
 	server    *http.Server
 	cfg       *cfg.Cfg
+	sdData    *sd.SdData
 }
 
-func NewWebServer(port int, callBacks WebCallBacks, config *cfg.Cfg) *WebServer {
+func NewWebServer(port int, callBacks WebCallBacks, config *cfg.Cfg, sdData *sd.SdData) *WebServer {
 	return &WebServer{
 		callBacks: callBacks,
 		port:      port,
 		cfg:       config,
+		sdData:    sdData,
 	}
 }
 
@@ -395,6 +398,71 @@ func (ws *WebServer) log(next http.Handler) http.Handler {
 	})
 }
 
+func (ws *WebServer) getSd(w http.ResponseWriter, r *http.Request) {
+	file := r.URL.Query().Get("file")
+	if file == "" {
+		http.Error(w, "missing file", http.StatusBadRequest)
+		return
+	}
+	f, info, err := ws.sdData.GetSd(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s"`, info.Name()))
+	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
+}
+
+func (ws *WebServer) listSd(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	dir := r.URL.Query().Get("dir")
+	json, err := ws.sdData.ListSd(dir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	_, _ = w.Write([]byte(json))
+}
+
+func (ws *WebServer) getData(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	now := time.Now()
+	start := r.URL.Query().Get("start")
+	var startTime time.Time
+	var endTime time.Time
+	var err error
+	if start == "" {
+		startTime = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	} else {
+		startTime, err = time.Parse("2006-01-02_15-04-05", start)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	end := r.URL.Query().Get("end")
+	if end == "" {
+		endTime = now
+	} else {
+		endTime, err = time.Parse("2006-01-02_15-04-05", end)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	_ = startTime
+	_ = endTime
+	data, err := ws.sdData.GetData(startTime, endTime)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	_, _ = w.Write(data)
+}
+
 func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux := http.NewServeMux()
 	webFS, err := fs.Sub(webFiles, "web")
@@ -417,6 +485,9 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux.HandleFunc("POST /setcfg", ws.setCfg)
 	mux.HandleFunc("POST /firmwareupdate", ws.fwUpdate)
 	mux.HandleFunc("GET /restart", ws.restart)
+	mux.HandleFunc("GET /listsd", ws.listSd)
+	mux.HandleFunc("GET /getsd", ws.getSd)
+	mux.HandleFunc("GET /getdata", ws.getData)
 
 	handler := ws.auth(mux)
 	handler = ws.log(handler)

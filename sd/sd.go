@@ -27,9 +27,11 @@
 package sd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"weatherd/cfg"
@@ -118,4 +120,191 @@ func (sd *SdData) writeEntryInternal(file string, data *SdDataEntry, now *time.T
 
 	_, err = f.WriteString(line)
 	return err
+}
+
+type listEntry struct {
+	Name string `json:"name"`
+}
+
+type listData struct {
+	Path  string      `json:"path"`
+	Dirs  []listEntry `json:"dirs"`
+	Files []listEntry `json:"files"`
+}
+
+// returns true if we are in basefolder
+func (sd *SdData) checkSdPath(dir string) (bool, error) {
+	// Verhindern, dass wir sd.folder verlassen
+	rel, err := filepath.Rel(sd.folder, dir)
+	if err != nil {
+		return false, err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return false, fmt.Errorf("invalid path")
+	}
+	return rel == ".", nil
+}
+
+func (sd *SdData) GetSd(file string) (*os.File, os.FileInfo, error) {
+	file = filepath.Join(sd.folder, filepath.Clean(file))
+	_, err := sd.checkSdPath(file)
+	if err != nil {
+		return nil, nil, err
+	}
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, nil, err
+	}
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, nil, err
+	}
+	return f, info, nil
+}
+
+func (sd *SdData) ListSd(dir string) ([]byte, error) {
+	var ld listData
+	ld.Path = dir
+	ld.Dirs = make([]listEntry, 0, 15)
+	ld.Files = make([]listEntry, 0, 40)
+	dir = filepath.Join(sd.folder, filepath.Clean(dir))
+	inRoot, err := sd.checkSdPath(dir)
+	if err != nil {
+		return nil, err
+	}
+	if !inRoot {
+		ld.Dirs = append(ld.Dirs, listEntry{Name: ".."})
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			ld.Dirs = append(ld.Dirs, listEntry{Name: entry.Name()})
+		} else {
+			ld.Files = append(ld.Files, listEntry{Name: entry.Name()})
+		}
+	}
+	data, err := json.Marshal(ld)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+type csvConfig struct {
+	Interval int `json:"sd_interval"`
+}
+
+type csvEntry struct {
+	Ti_y  int `json:"ti_y"`
+	Ti_m  int `json:"ti_m"`
+	Ti_d  int `json:"ti_d"`
+	Ti_h  int `json:"ti_h"`
+	Ti_mi int `json:"ti_mi"`
+	Ti_s  int `json:"ti_s"`
+	T     int `json:"t"`
+	T2    int `json:"t2"`
+	H     int `json:"h"`
+	H2    int `json:"h2"`
+	DP    int `json:"d"`
+	DP2   int `json:"d2"`
+	P     int `json:"p"`
+	P2    int `json:"p2"`
+	Pn    int `json:"pn"`
+	Pn2   int `json:"pn2"`
+	L     int `json:"l"`
+	L2    int `json:"i2"`
+}
+
+type csvData struct {
+	CsvConfig csvConfig  `json:"config"`
+	Entries   []csvEntry `json:"data"`
+}
+
+func (sd *SdData) GetFilePath(t time.Time) string {
+	path := filepath.Join(sd.folder, fmt.Sprintf("%04d", t.Year()))
+	path = filepath.Join(path, fmt.Sprintf("%02d", t.Month()))
+	path = filepath.Join(path, fmt.Sprintf("%04d-%02d-%04d.csv", t.Year(), t.Month(), t.Day()))
+	return path
+}
+
+func (sd *SdData) GetStartFile(t, endTime time.Time) (string, error) {
+	path := sd.GetFilePath(t)
+	ok, err := helper.ExistFile(path)
+	if err != nil {
+		return "", err
+	}
+	if ok {
+		return path, nil
+	} else {
+		for {
+			t = t.AddDate(0, 0, 1)
+			if !t.Before(endTime) {
+				return "", fmt.Errorf("No data")
+			}
+			path = sd.GetFilePath(t)
+			ok, err = helper.ExistFile(path)
+			if err != nil {
+				return "", err
+			}
+			if ok {
+				return path, nil
+			}
+		}
+	}
+}
+
+func (sd *SdData) GetEndFile(t, startTime time.Time) (string, error) {
+	path := sd.GetFilePath(t)
+	ok, err := helper.ExistFile(path)
+	if err != nil {
+		return "", err
+	}
+	if ok {
+		return path, nil
+	} else {
+		for {
+			t = t.AddDate(0, 0, -1)
+			if !t.After(startTime) {
+				return "", fmt.Errorf("No data")
+			}
+			path = sd.GetFilePath(t)
+			ok, err = helper.ExistFile(path)
+			if err != nil {
+				return "", err
+			}
+			if ok {
+				return path, nil
+			}
+		}
+	}
+}
+
+func (sd *SdData) GetData(startTime, endTime time.Time) ([]byte, error) {
+	data := csvData{
+		CsvConfig: csvConfig{
+			Interval: sd.config.GetIntValue(cfg.SECTION_DATA, cfg.KEY_DATA_INTERVAL, cfg.DEF_DATA_INTERVAL),
+		},
+		Entries: make([]csvEntry, 0, 500),
+	}
+	startFile, err := sd.GetStartFile(startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	
+	endFile, err := sd.GetEndFile(startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	startTime, err = time.Parse("2006-01-02_15-04-05", startFile)
+	
+
+	d, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
 }

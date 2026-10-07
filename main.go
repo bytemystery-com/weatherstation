@@ -207,7 +207,7 @@ func main() {
 		return
 	}
 
-	Data.WebServer = webserver.NewWebServer(8080, callBacks, Data.Config)
+	Data.WebServer = webserver.NewWebServer(8080, callBacks, Data.Config, Data.SdData)
 	webError := make(chan error, 1)
 	Data.WebServer.StartWebServer(webError)
 
