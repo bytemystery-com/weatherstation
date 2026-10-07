@@ -138,7 +138,7 @@ func (sht *Sht45) GetName() string {
 }
 
 func (sht *Sht45) GetData() (float32, float32, uint32, bool) {
-	return float32(sht.shm.temperature.Load() / 10.0), float32(sht.shm.humidity.Load() / 10.0), sht.shm.errors.Load(), sht.shm.isValid.Load()
+	return float32(sht.shm.temperature.Load()) / 10.0, float32(sht.shm.humidity.Load()) / 10.0, sht.shm.errors.Load(), sht.shm.isValid.Load()
 }
 
 func (sht *Sht45) GetError() (uint32, bool) {

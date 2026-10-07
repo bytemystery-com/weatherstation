@@ -27,6 +27,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"time"
 
@@ -50,6 +51,7 @@ var _ webserver.WebCallBacks = (*WebCallbacksImpl)(nil)
 func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 	luxErrCount, luxIsValid := Data.Veml7700.GetError()
 	humErrCount, humIsValid := Data.Sht45.GetError()
+	presErrCount, presIsValid := Data.Bmp581.GetError()
 	data := webserver.WebDataAll{
 		Lux: webserver.WebDataLux{
 			WebData: webserver.WebData{
@@ -64,16 +66,24 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 		Pressure: webserver.WebDataPressure{
 			WebData: webserver.WebData{
 				SensorName: Data.Bmp581.GetName(),
-				Errors:     0,
-				Valid:      true,
+				Errors:     uint(presErrCount),
+				Valid:      presIsValid,
 			},
-			Pressure:       0,
-			PressureNormal: 0,
+			Pressure:               Data.F_pressure.GetValue() / 100.0,
+			PressureNormal:         Data.F_pressureNormal.GetValue() / 100.0,
+			Pressure2:              Data.F2_pressure.GetValue() / 100.0,
+			Pressure2Normal:        Data.F2_pressureNormal.GetValue() / 100.0,
+			Temperature:            Data.F_temp2.GetValue(),
+			Temperature2:           Data.F2_temp2.GetValue(),
+			PressureTrend1:         math.Float32frombits(Data.PressureTrendData.Trend1.Load()) / 100.0,
+			PressureTrend1Goodness: math.Float32frombits(Data.PressureTrendData.Goodnness1.Load()),
+			PressureTrend3:         math.Float32frombits(Data.PressureTrendData.Trend3.Load()) / 100.0,
+			PressureTrend3Goodness: math.Float32frombits(Data.PressureTrendData.Goodnness3.Load()),
 		},
 
 		Humidity: webserver.WebDataHumidity{
 			WebData: webserver.WebData{
-				SensorName: "",
+				SensorName: Data.Sht45.GetName(),
 				Errors:     uint(humErrCount),
 				Valid:      humIsValid,
 			},
@@ -163,7 +173,7 @@ func main() {
 	}
 
 	Data.Bmp581 = sensors.NewBmp581(sensors.BMP581_ADDR1, bus)
-	Data.Bmp581.Start(1000*time.Millisecond)
+	Data.Bmp581.Start(1000 * time.Millisecond)
 
 	// BMP581
 	Data.F_pressure, err = filter.NewAvgFilter(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_P, cfg.DEF_PRESSURE_FC), 0)
@@ -190,6 +200,7 @@ func main() {
 	if err != nil {
 		return
 	}
+	Data.PressureTrendData.Values = make([]float64, 0, 10800/Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PRESSURE_TREND_INTERVAL, cfg.DEF_PRESSURE_TREND_INTERVAL))
 
 	// SD
 	Data.SdData, err = sd.NewSdData(Data.Config)
@@ -203,6 +214,7 @@ func main() {
 
 	go doMeasure()
 	go doSd()
+	go doPressureTrend()
 
 	<-webError
 
@@ -213,15 +225,15 @@ func doMeasure() {
 	for !raspi.RebbotRequested.Load() {
 		time.Sleep(time.Duration(Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_MEASURE_INTERVAL, cfg.DEF_MEASURE_INTERVAL)) * time.Millisecond)
 		// VEML7700
-		lux, _, _, isValid := Data.Veml7700.GetData()
-		if isValid {
+		lux, _, _, isValidL := Data.Veml7700.GetData()
+		if isValidL {
 			Data.F_lux.Add(lux)
 			Data.F2_lux.Add(lux)
 			// log.Printf("Lux: %.2f, Lux2: %.2f", Data.F_lux.GetValue(), Data.F2_lux.GetValue())
 		}
 		// SHT45
-		temperature, humidity, _, isValid := Data.Sht45.GetData()
-		if isValid {
+		temperature, humidity, _, isValidH := Data.Sht45.GetData()
+		if isValidH {
 			Data.F_temp1.Add(temperature)
 			Data.F2_temp1.Add(temperature)
 			Data.F_humidity.Add(humidity)
@@ -230,6 +242,23 @@ func doMeasure() {
 			Data.F_dp.Add(dp)
 			Data.F2_dp.Add(dp)
 			log.Printf("Temperature: %.1f, Humidity: %.1f, DewPoint: %.1f", Data.F_temp1.GetValue(), Data.F_humidity.GetValue(), Data.F_dp.GetValue())
+		}
+		// BMP581
+		temperatureP, pressure, isValidP := Data.Bmp581.GetData()
+		if isValidP {
+			temp := temperatureP
+			if isValidH {
+				temp = temperature
+			}
+			pressureNormal := helper.PressureAtSeaLevel(float64(pressure),
+				float64(Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_HEIGHT, cfg.DEF_HEIGHT)), float64(temp), float64(humidity))
+			Data.F_pressure.Add(pressure)
+			Data.F2_pressure.Add(pressure)
+			Data.F_pressureNormal.Add(float32(pressureNormal))
+			Data.F2_pressureNormal.Add(float32(pressureNormal))
+			Data.F_temp2.Add(temperatureP)
+			Data.F2_temp2.Add(temperatureP)
+			log.Printf("TemperatureP: %.1f, Pressure: %.1f", Data.F_temp2.GetValue(), Data.F_pressure.GetValue()/100.0)
 		}
 	}
 }
@@ -244,6 +273,12 @@ func doSd() {
 	valid_h2 := false
 	valid_dp1 := false
 	valid_dp2 := false
+	valid_p := false
+	valid_pn := false
+	valid_t2 := false
+	valid_p2 := false
+	valid_pn2 := false
+	valid_t22 := false
 	for !raspi.RebbotRequested.Load() {
 		sdEntry.L_1, valid_l1 = Data.F_lux.GetValueExt()
 		sdEntry.L_2, valid_l2 = Data.F2_lux.GetValueExt()
@@ -253,12 +288,59 @@ func doSd() {
 		sdEntry.H_2, valid_h2 = Data.F2_humidity.GetValueExt()
 		sdEntry.Dp_1, valid_dp1 = Data.F_dp.GetValueExt()
 		sdEntry.Dp_2, valid_dp2 = Data.F2_dp.GetValueExt()
-		// sdEntry.E_2, _ = Data.Bmp581.GetError()
+		sdEntry.P_1, valid_p = Data.F_pressure.GetValueExt()
+		sdEntry.P_2, valid_p2 = Data.F2_pressure.GetValueExt()
+		sdEntry.Pn_1, valid_pn = Data.F_pressureNormal.GetValueExt()
+		sdEntry.Pn_2, valid_pn2 = Data.F2_pressureNormal.GetValueExt()
+		sdEntry.T2_1, valid_t2 = Data.F_temp2.GetValueExt()
+		sdEntry.T2_2, valid_t22 = Data.F2_temp2.GetValueExt()
+		sdEntry.P_1 /= 100.0
+		sdEntry.P_2 /= 100.0
+		sdEntry.Pn_1 /= 100.0
+		sdEntry.Pn_2 /= 100.0
+
 		sdEntry.E_1, _ = Data.Sht45.GetError()
+		sdEntry.E_2, _ = Data.Bmp581.GetError()
 		sdEntry.E_3, _ = Data.Veml7700.GetError()
-		if valid_l1 && valid_l2 && valid_t1 && valid_t12 && valid_h1 && valid_h2 && valid_dp1 && valid_dp2 {
+
+		if valid_l1 && valid_l2 && valid_t1 && valid_t12 && valid_h1 && valid_h2 && valid_dp1 && valid_dp2 &&
+			valid_p && valid_pn && valid_t2 && valid_p2 && valid_pn2 && valid_t22 {
 			Data.SdData.WriteEntry(&sdEntry)
 		}
 		time.Sleep(time.Duration(Data.Config.GetIntValue(cfg.SECTION_DATA, cfg.KEY_DATA_INTERVAL, cfg.DEF_DATA_INTERVAL)) * time.Second)
+	}
+}
+
+func doPressureTrend() {
+	for !raspi.RebbotRequested.Load() {
+		pressure, isValid := Data.F_pressure.GetValueExt()
+		interval := Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PRESSURE_TREND_INTERVAL, cfg.DEF_PRESSURE_TREND_INTERVAL)
+		if isValid {
+			if len(Data.PressureTrendData.Values) >= cap(Data.PressureTrendData.Values) {
+				copy(Data.PressureTrendData.Values, Data.PressureTrendData.Values[1:])
+				Data.PressureTrendData.Values = Data.PressureTrendData.Values[:len(Data.PressureTrendData.Values)-1]
+			}
+			Data.PressureTrendData.Values = append(Data.PressureTrendData.Values, float64(pressure))
+			if len(Data.PressureTrendData.Values) >= 2 {
+				// Caculate trend
+				x := make([]float64, len(Data.PressureTrendData.Values))
+				for i := range len(Data.PressureTrendData.Values) {
+					x[i] = float64(i) * float64(interval)
+				}
+				a1, _, g := helper.CalculateRegression(x, Data.PressureTrendData.Values)
+				Data.PressureTrendData.Trend3.Store(math.Float32bits(float32(a1 * 3600.0)))
+				Data.PressureTrendData.Goodnness3.Store(math.Float32bits(float32(g)))
+				l1 := 3600 / interval
+				if len(x) > l1 {
+					l1 = len(x) - l1
+				} else {
+					l1 = 0
+				}
+				a1, _, g = helper.CalculateRegression(x[l1:], Data.PressureTrendData.Values[l1:])
+				Data.PressureTrendData.Trend1.Store(math.Float32bits(float32(a1 * 3600.0)))
+				Data.PressureTrendData.Goodnness1.Store(math.Float32bits(float32(g)))
+			}
+		}
+		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }

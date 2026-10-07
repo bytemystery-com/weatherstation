@@ -66,6 +66,12 @@ const (
 	BMP581_NVM_ADDR_START3 = 0x23
 	BMP581_NVM_ADDR_END3   = 0x26
 	BMP581_NVM_ADDR_CRC    = 0x27
+	BMP581_NVM_ADDR_USER1  = 0x20
+	BMP581_NVM_ADDR_USER2  = 0x21
+	BMP581_NVM_ADDR_USER3  = 0x22
+
+	BMP581_CMD_NVM_PROG      = (1 << 6)
+	BMP581_CMD_NVM_ADDR_MASK = (0x3F)
 
 	BMP581_CMD_RESET = 0xB6
 
@@ -187,7 +193,7 @@ const (
 )
 
 type bmp851ShmData struct {
-	temperature atomic.Int32  // temperature*100
+	temperature atomic.Int32  // temperature*10
 	pressure    atomic.Uint32 // druck*10
 	errors      atomic.Uint32
 	isValid     atomic.Bool
@@ -221,8 +227,8 @@ func (bmp *Bmp581) GetName() string {
 	return bmp.name
 }
 
-func (bmp *Bmp581) GetData() (float32, float32) {
-	return float32(bmp.shm.temperature.Load() / 100), float32(bmp.shm.pressure.Load() / 10.0)
+func (bmp *Bmp581) GetData() (float32, float32, bool) {
+	return float32(bmp.shm.temperature.Load()) / 10.0, float32(bmp.shm.pressure.Load()) / 10.0, bmp.shm.isValid.Load()
 }
 
 func (bmp *Bmp581) GetError() (uint32, bool) {
@@ -357,6 +363,177 @@ func (bmp *Bmp581) waitForNvmReady() error {
 		iter++
 	}
 	return nil
+}
+
+// returns old register
+func (bmp *Bmp581) setStandby() (uint8, error) {
+	data := make([]i2c.I2cData, 2)
+	data[0].Mode = i2c.I2c_write
+	data[0].Data = []byte{BMP581_REG_ODR}
+	data[1].Mode = i2c.I2c_read
+	data[1].Data = make([]byte, 1)
+	err := bmp.dev.Transfer(data)
+	if err != nil {
+		return 0, err
+	}
+	oldOdr := data[1].Data[0]
+	newOdr := data[1].Data[0]&(^uint8(BMP581_MODE_MASK)) | uint8(BMP581_MODE_STANDBY) | uint8(BMP581_MODE_DEEP_DISABLED)
+	data = make([]i2c.I2cData, 1)
+	data[0].Mode = i2c.I2c_write
+	data[0].Data = []byte{BMP581_REG_ODR, newOdr}
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return 0, err
+	}
+	return oldOdr, nil
+}
+
+func (bmp *Bmp581) writeNvm(addr byte, value uint16) error {
+	if addr != BMP581_NVM_ADDR_USER1 && addr != BMP581_NVM_ADDR_USER2 && addr != BMP581_NVM_ADDR_USER3 {
+		return fmt.Errorf("Invalid NVM address for write")
+	}
+	oldOdr, err := bmp.setStandby()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		data := make([]i2c.I2cData, 1)
+		data[0].Mode = i2c.I2c_write
+		data[0].Data = []byte{BMP581_REG_ODR, oldOdr}
+		err = bmp.dev.Transfer(data)
+	}()
+	err = bmp.waitForNvmReady()
+	if err != nil {
+		return err
+	}
+	dataAddr := make([]i2c.I2cData, 1)
+	dataAddr[0].Mode = i2c.I2c_write
+	dataAddr[0].Data = []byte{BMP581_REG_NVM_ADDR, (addr & BMP581_CMD_NVM_ADDR_MASK) | BMP581_CMD_NVM_PROG}
+	err = bmp.dev.Transfer(dataAddr)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		dataAddr := make([]i2c.I2cData, 1)
+		dataAddr[0].Mode = i2c.I2c_write
+		dataAddr[0].Data = []byte{BMP581_REG_NVM_ADDR, (addr & BMP581_CMD_NVM_ADDR_MASK)}
+		bmp.dev.Transfer(dataAddr)
+	}()
+	data := make([]i2c.I2cData, 1)
+	data[0].Mode = i2c.I2c_write
+	data[0].Data = []byte{BMP581_REG_NVM_LSB, byte(value & 0xFF)}
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return err
+	}
+	data[0].Data = []byte{BMP581_REG_NVM_MSB, byte((value >> 8) & 0xFF)}
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return err
+	}
+	dataCmd := make([]i2c.I2cData, 1)
+	dataCmd[0].Mode = i2c.I2c_write
+	dataCmd[0].Data = []byte{BMP581_REG_CMD, BMP581_CMD_NVM_START}
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return err
+	}
+	dataCmd[0].Data[1] = BMP581_CMD_NVM_WRITE
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return err
+	}
+	err = bmp.waitForNvmReady()
+	if err != nil {
+		return err
+	}
+	status, err := bmp.getStatus()
+	if err != nil {
+		return err
+	}
+	if (status&BMP581_STATUS_NVM_ERROR) != 0 || (status&BMP581_STATUS_NVM_CMD_ERROR) != 0 {
+		return fmt.Errorf("Write NVM failed")
+	}
+	return nil
+}
+
+func (bmp *Bmp581) readNvm(addr byte) (uint16, error) {
+	oldOdr, err := bmp.setStandby()
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		data := make([]i2c.I2cData, 1)
+		data[0].Mode = i2c.I2c_write
+		data[0].Data = []byte{BMP581_REG_ODR, oldOdr}
+		err = bmp.dev.Transfer(data)
+	}()
+
+	err = bmp.waitForNvmReady()
+	if err != nil {
+		return 0, err
+	}
+	data := make([]i2c.I2cData, 2)
+	data[0].Mode = i2c.I2c_write
+	data[0].Data = []byte{BMP581_REG_ODR}
+	data[1].Mode = i2c.I2c_read
+	data[1].Data = make([]byte, 1)
+	err = bmp.dev.Transfer(data)
+	if err != nil {
+		return 0, err
+	}
+	log.Printf("ODR: 0x%02x", data[1].Data[0])
+
+	// NVM read
+	dataAddr := make([]i2c.I2cData, 1)
+	dataAddr[0].Mode = i2c.I2c_write
+	dataAddr[0].Data = []byte{BMP581_REG_NVM_ADDR, addr & BMP581_CMD_NVM_ADDR_MASK}
+
+	dataCmd1 := make([]i2c.I2cData, 1)
+	dataCmd1[0].Mode = i2c.I2c_write
+	dataCmd1[0].Data = []byte{BMP581_REG_CMD, BMP581_CMD_NVM_START}
+
+	dataCmd2 := make([]i2c.I2cData, 1)
+	dataCmd2[0].Mode = i2c.I2c_write
+	dataCmd2[0].Data = []byte{BMP581_REG_CMD, BMP581_CMD_NVM_READ}
+
+	dataRead := make([]i2c.I2cData, 2)
+	dataRead[0].Mode = i2c.I2c_write
+	dataRead[0].Data = []byte{BMP581_REG_NVM_LSB, 0}
+	dataRead[1].Mode = i2c.I2c_read
+	dataRead[1].Data = make([]byte, 2)
+
+	err = bmp.dev.Transfer(dataAddr)
+	if err != nil {
+		return 0, err
+	}
+	err = bmp.dev.Transfer(dataCmd1)
+	if err != nil {
+		return 0, err
+	}
+	err = bmp.dev.Transfer(dataCmd2)
+	if err != nil {
+		return 0, err
+	}
+	err = bmp.waitForNvmReady()
+	if err != nil {
+		return 0, err
+	}
+
+	err = bmp.dev.Transfer(dataRead)
+	if err != nil {
+		return 0, err
+	}
+	status, err := bmp.getStatus()
+	if err != nil {
+		return 0, err
+	}
+	if (status&BMP581_STATUS_NVM_ERROR) != 0 || (status&BMP581_STATUS_NVM_CMD_ERROR) != 0 {
+		return 0, fmt.Errorf("Read NVM failed")
+	}
+
+	log.Printf("XXX %d %d", dataRead[0].Data[0], dataRead[0].Data[1])
+	return uint16(dataRead[0].Data[1])<<8 | uint16(dataRead[0].Data[0]), nil
 }
 
 func (bmp *Bmp581) checkNvRam() error {
@@ -554,14 +731,22 @@ func (bmp *Bmp581) init() error {
 	if err != nil {
 		return err
 	}
-	//	err = bmp.checkNvRam()
+	/*
+		err = bmp.writeNvm(0x21, 0x1210)
+		val, err := bmp.readNvm(0x21)
+		if err != nil {
+			return err
+		}
+		log.Printf("NVM read: %d", val)
+		//	err = bmp.checkNvRam()
+	*/
 	return err
 }
 
 func (bmp *Bmp581) configure() error {
 	data := make([]i2c.I2cData, 5)
 	data[0].Mode = i2c.I2c_write
-	data[0].Data = []byte{BMP581_REG_ODR, BMP581_MODE_FORCED | BMP581_MODE_ODR_001}
+	data[0].Data = []byte{BMP581_REG_ODR, BMP581_MODE_FORCED | BMP581_MODE_ODR_001 | BMP581_MODE_DEEP_DISABLED}
 	data[1].Mode = i2c.I2c_write
 	data[1].Data = []byte{BMP581_REG_OSR, BMP581_OSRT_4 | BMP581_OSRP_8 | BMP581_OSR_PRESSURE_ENABLED}
 	data[2].Mode = i2c.I2c_write
@@ -694,7 +879,7 @@ func (bmp *Bmp581) loop() {
 				bmp.shm.errors.Add(1)
 				bmp.shm.isValid.Store(false)
 			} else {
-				bmp.shm.temperature.Store(int32(temp * 100))
+				bmp.shm.temperature.Store(int32(temp * 10))
 				bmp.shm.pressure.Store(uint32(pressure * 10))
 				bmp.shm.isValid.Store(true)
 			}

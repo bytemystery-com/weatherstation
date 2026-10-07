@@ -25,12 +25,22 @@
 package data
 
 import (
+	"sync/atomic"
+
 	"weatherd/cfg"
 	"weatherd/filter"
 	"weatherd/sd"
 	"weatherd/sensors"
 	"weatherd/webserver"
 )
+
+type PressureTrendData struct {
+	Values     []float64
+	Trend1     atomic.Uint32
+	Goodnness1 atomic.Uint32
+	Trend3     atomic.Uint32
+	Goodnness3 atomic.Uint32
+}
 
 type Data struct {
 	F_lux             *filter.AvgFilter
@@ -53,4 +63,5 @@ type Data struct {
 	WebServer         *webserver.WebServer
 	SdData            *sd.SdData
 	Config            *cfg.Cfg
+	PressureTrendData PressureTrendData
 }

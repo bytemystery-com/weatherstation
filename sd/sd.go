@@ -21,6 +21,8 @@
 // SPDX-License-Identifier: MIT
 //
 // Author: Reiner Pröls
+//
+// Write data in csv file on SD card
 
 package sd
 
@@ -36,7 +38,7 @@ import (
 
 const (
 	// DT;T;T2;H;H2;DP;DP2;P;PN;P2;PN2;T;T2;L;L2;ESHT;EBMH;EVEML
-	DATA_HEADERLINE = "# Date Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %] (SHT);Humidity2 [rel %] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
+	DATA_HEADERLINE = "# Weather station\r\n# Version: %s\r\n# Date Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %%] (SHT);Humidity2 [rel %%] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
 )
 
 type SdData struct {
@@ -87,7 +89,7 @@ func (sd *SdData) writeHeader(file string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(file, []byte(DATA_HEADERLINE), 0o644)
+	return os.WriteFile(file, []byte(fmt.Sprintf(DATA_HEADERLINE, cfg.WEATHER_STATION_VERSION)), 0o644)
 }
 
 func (sd *SdData) WriteEntry(data *SdDataEntry) error {

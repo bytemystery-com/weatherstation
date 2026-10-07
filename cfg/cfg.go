@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.0"
+	WEATHER_STATION_VERSION = "2.1"
 
 	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
 
@@ -65,15 +65,16 @@ const (
 	KEY_FILTER_CONST_L   = "filter_constant_l"
 	KEY_FILTER_CONST_L2  = "filter_constant_l2"
 
-	SECTION_GENERAL                   = "general"
-	KEY_GENERAL_HEIGHT                = "height"
-	KEY_GENERAL_NAME                  = "Name"
-	KEY_GENERAL_USE_PASSWORD          = "UsePassword"
-	KEY_GENERAL_PASSWORD              = "Password"
-	KEY_GENERAL_UPDATE_INTERVAL       = "UpdateInterval"
-	KEY_GENERAL_MEASURE_INTERVAL      = "MeasureInterval"
-	KEY_GENERAL_HEATER_INTERVAL       = "HeaterInterval"
-	KEY_GENERAL_HEATER_MAINT_INTERVAL = "HeaterMaintInterval"
+	SECTION_GENERAL                     = "general"
+	KEY_GENERAL_HEIGHT                  = "height"
+	KEY_GENERAL_NAME                    = "Name"
+	KEY_GENERAL_USE_PASSWORD            = "UsePassword"
+	KEY_GENERAL_PASSWORD                = "Password"
+	KEY_GENERAL_UPDATE_INTERVAL         = "UpdateInterval"
+	KEY_GENERAL_MEASURE_INTERVAL        = "MeasureInterval"
+	KEY_GENERAL_HEATER_INTERVAL         = "HeaterInterval"
+	KEY_GENERAL_HEATER_MAINT_INTERVAL   = "HeaterMaintInterval"
+	KEY_GENERAL_PRESSURE_TREND_INTERVAL = "PressureTrendInterval"
 
 	SECTION_SYSTEM               = "system"
 	KEY_SYSTEM_RESTART_POFF_TIME = "PoweroffTime"
@@ -86,16 +87,17 @@ const (
 	KEY_DATA_FOLDER   = "Folder"
 	KEY_DATA_INTERVAL = "Interval"
 
-	DEF_HEIGHT                = 515
-	DEF_NAME                  = "Weather Station"
-	DEF_USE_PASSWORD          = true
-	DEF_UPDATE_INTERVAL       = 5000
-	DEF_RESTART_POFF_TIME     = 60 // sec
-	DEF_DATA_FOLDER           = "/data"
-	DEF_DATA_INTERVAL         = 300  // sec
-	DEF_MEASURE_INTERVAL      = 1000 // msec
-	DEF_HEATER_INTERVAL       = 60   // min
-	DEF_HEATER_MAINT_INTERVAL = 168  // Hours
+	DEF_HEIGHT                  = 515
+	DEF_NAME                    = "Weather Station"
+	DEF_USE_PASSWORD            = true
+	DEF_UPDATE_INTERVAL         = 5000
+	DEF_RESTART_POFF_TIME       = 60 // sec
+	DEF_DATA_FOLDER             = "/data"
+	DEF_DATA_INTERVAL           = 300  // sec
+	DEF_MEASURE_INTERVAL        = 1000 // msec
+	DEF_HEATER_INTERVAL         = 60   // min
+	DEF_HEATER_MAINT_INTERVAL   = 168  // Hours
+	DEF_PRESSURE_TREND_INTERVAL = 60   // sec
 )
 
 type Cfg struct {
@@ -115,6 +117,7 @@ func NewCfg(file string, doReload func()) (*Cfg, error) {
 		ini:     ini.Empty(),
 	}
 	if !ok {
+		log.Printf("CFG: New created in %s", file)
 		c.SetDeaultCfg()
 		c.Save()
 	} else {
@@ -124,6 +127,7 @@ func NewCfg(file string, doReload func()) (*Cfg, error) {
 		}
 		c.ini = cfg
 	}
+	log.Printf("CFG: Loaded from %s", file)
 	return &c, nil
 }
 
@@ -238,6 +242,7 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_MEASURE_INTERVAL, DEF_MEASURE_INTERVAL, "Measure interval [msec]")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_INTERVAL, DEF_HEATER_INTERVAL, "Heater interval [min]")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_MAINT_INTERVAL, DEF_HEATER_MAINT_INTERVAL, "Heater maintenance interval [hour]")
+	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_PRESSURE_TREND_INTERVAL, DEF_PRESSURE_TREND_INTERVAL, "Interval for pressure trend data [sec]")
 
 	c.SetIntValue(SECTION_SYSTEM, KEY_SYSTEM_RESTART_POFF_TIME, DEF_RESTART_POFF_TIME, "Restart after restart command [sec]")
 

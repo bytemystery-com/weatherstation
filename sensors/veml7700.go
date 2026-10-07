@@ -90,7 +90,6 @@ const (
 
 type veml7700ShmData struct {
 	lux           atomic.Uint32 // lux*100
-	white         atomic.Uint32 // white*100
 	overrun       atomic.Bool   // ausserhalb spec
 	whiteAlsRatio atomic.Uint32 // ratio*1000
 	errors        atomic.Uint32
@@ -128,7 +127,7 @@ func (veml *Veml7700) GetName() string {
 }
 
 func (veml *Veml7700) GetData() (float32, float32, uint32, bool) {
-	return float32(veml.shm.lux.Load() / 100.0), float32(veml.shm.lux.Load() / 100.0), veml.shm.errors.Load(), veml.shm.isValid.Load()
+	return float32(veml.shm.lux.Load()) / 100.0, float32(veml.shm.whiteAlsRatio.Load()) / 1000.0, veml.shm.errors.Load(), veml.shm.isValid.Load()
 }
 
 func (veml *Veml7700) GetError() (uint32, bool) {
@@ -500,7 +499,7 @@ func (veml *Veml7700) loop() {
 				log.Printf("VEML7700: measure failed with %v", err)
 			} else {
 				log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
-				veml.shm.lux.Store(uint32(lux * 100))
+				veml.shm.lux.Store(uint32(lux * 100.0))
 				veml.shm.overrun.Store(overrun)
 				veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))
 				veml.shm.isValid.Store(true)

@@ -174,3 +174,56 @@ func PressureAtSeaLevel(pressure, height, temp, humidity float64) float64 {
 
 	return pressure * math.Exp(x)
 }
+
+// returns a0, a1, and goodness
+// http://elsenaju.info/Rechnen/Ausgleichsgerade.htm
+// y = a1*x + a0
+func CalculateRegression(x, y []float64) (a1, a0, goodness float64) {
+	n := len(x)
+	if n == 0 || len(y) != n {
+		return 0, 0, 0
+	}
+
+	// y = a1*x + a0
+	var xavg, yavg float64
+
+	for i := 0; i < n; i++ {
+		xavg += x[i]
+		yavg += y[i]
+	}
+
+	xavg /= float64(n)
+	yavg /= float64(n)
+
+	var s1, s2 float64
+
+	for i := 0; i < n; i++ {
+		dx := x[i] - xavg
+		dy := y[i] - yavg
+
+		s1 += dx * dy
+		s2 += dx * dx
+	}
+
+	if s2 == 0 {
+		return 0, yavg, 0
+	}
+
+	a1 = s1 / s2
+	a0 = yavg - a1*xavg
+
+	// goodness
+	var sum float64
+
+	for i := 0; i < n; i++ {
+		if y[i] != 0 {
+			delta := (y[i] - (x[i]*a1 + a0)) / y[i]
+			sum += delta * delta
+		}
+	}
+
+	if sum < 1.0 {
+		goodness = math.Sqrt(1.0 - sum)
+	}
+	return
+}

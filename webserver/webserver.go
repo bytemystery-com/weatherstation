@@ -66,12 +66,16 @@ type WebDataLux struct {
 
 type WebDataPressure struct {
 	WebData
-	Temperature     float32 `json:"temperature"`
-	Temperature2    float32 `json:"temperature2"`
-	Pressure        float32 `json:"pressure"`
-	PressureNormal  float32 `json:"pressure_normal"`
-	Pressure2       float32 `json:"pressure2"`
-	PressureNormal2 float32 `json:"pressure2_normal"`
+	Temperature            float32 `json:"temperature"`
+	Temperature2           float32 `json:"temperature2"`
+	Pressure               float32 `json:"pressure"`
+	PressureNormal         float32 `json:"pressure_normal"`
+	Pressure2              float32 `json:"pressure2"`
+	Pressure2Normal        float32 `json:"pressure2_normal"`
+	PressureTrend1         float32 `json:"-"`
+	PressureTrend1Goodness float32 `json:"-"`
+	PressureTrend3         float32 `json:"-"`
+	PressureTrend3Goodness float32 `json:"-"`
 }
 
 type WebDataHumidity struct {
@@ -238,13 +242,15 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 			UpdateInterval: ws.cfg.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_UPDATE_INTERVAL, cfg.DEF_UPDATE_INTERVAL),
 		},
 		Status: status{
-			Version:        cfg.WEATHER_STATION_VERSION,
-			Uptime:         ws.getUptime(),
-			Time:           t,
-			PressureTrend1: 0.1,
-			PressureTrend3: -0.3,
-			Errors:         errors,
-			Resets:         uint(ws.cfg.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)),
+			Version:                cfg.WEATHER_STATION_VERSION,
+			Uptime:                 ws.getUptime(),
+			Time:                   t,
+			PressureTrend1:         data.Pressure.PressureTrend1,
+			PressureTrend1Goodness: data.Pressure.PressureTrend1Goodness,
+			PressureTrend3:         data.Pressure.PressureTrend3,
+			PressureTrend3Goodness: data.Pressure.PressureTrend3Goodness,
+			Errors:                 errors,
+			Resets:                 uint(ws.cfg.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)),
 			Sd: sd{
 				Free:  raspiDiskFree,
 				Total: raspiDiskTotal,
