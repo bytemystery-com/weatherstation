@@ -445,7 +445,6 @@ func (sht *Sht45) loop() {
 			if sht.state == sht45States_measure {
 				delay := sht.handleHeater(float64(temperature), float64(humidity))
 				if delay > 0 {
-					sht.shm.isValid.Store(false)
 					sleep = delay
 				}
 			}
@@ -460,6 +459,7 @@ func (sht *Sht45) loop() {
 				sht.state = sht45States_init
 			}
 			sleep = time.Duration(SHT45_HEATER_COOOL_DOWN) * time.Second
+			sht.shm.isValid.Store(false)
 
 		case sht45States_wait_heater_cooldown:
 			sht.state = sht45States_measure

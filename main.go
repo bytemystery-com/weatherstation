@@ -162,6 +162,9 @@ func main() {
 		return
 	}
 
+	Data.Bmp581 = sensors.NewBmp581(sensors.BMP581_ADDR1, bus)
+	Data.Bmp581.Start(1000*time.Millisecond)
+
 	// BMP581
 	Data.F_pressure, err = filter.NewAvgFilter(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_P, cfg.DEF_PRESSURE_FC), 0)
 	if err != nil {

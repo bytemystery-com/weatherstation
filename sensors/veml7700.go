@@ -499,7 +499,7 @@ func (veml *Veml7700) loop() {
 				veml.state = veml7700States_init
 				log.Printf("VEML7700: measure failed with %v", err)
 			} else {
-				// log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
+				log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
 				veml.shm.lux.Store(uint32(lux * 100))
 				veml.shm.overrun.Store(overrun)
 				veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))
