@@ -9,10 +9,10 @@
             "command": "sshpass",
             "args": [
                 "-p",
-                "psyst",
+                "${config:remotePass}",
                 "ssh",
-                "psyst@192.168.0.177",
-                "cd /home/psyst/goweather && go build -gcflags=\"all=-N -l\" ."
+                "${config:remoteUser}@${config:remoteHost}",
+                "cd ${config:remoteFolder} && go build -gcflags=\"all=-N -l\" ."
             ],
             "problemMatcher": [
                 "$go"
@@ -26,10 +26,10 @@
             "command": "sshpass",
             "args": [
                 "-p",
-                "psyst",
+                "${config:remotePass}",
                 "ssh",
-                "psyst@192.168.0.177",
-                "/home/psyst/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec /home/psyst/goweather/weatherd -- -d"
+                "${config:remoteUser}@${config:remoteHost}",
+                "/home/${config:remoteUser}/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec ${config:remoteFolder}/weatherd -- -d"
             ],
             "isBackground": true,
             "problemMatcher": {
@@ -49,9 +49,9 @@
             "command": "sshpass",
             "args": [
                 "-p",
-                "psyst",
+                "${config:remotePass}",
                 "ssh",
-                "psyst@192.168.0.177",
+                "${config:remoteUser}@${config:remoteHost}",
                 "pkill -x dlv || true"
             ],
              "problemMatcher": []

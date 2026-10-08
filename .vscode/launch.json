@@ -7,9 +7,9 @@
             "request": "attach",
             "mode": "remote",
             "debugAdapter": "legacy",
-            "remotePath": "/home/psyst/goweather",
+            "remotePath": "${config:remoteFolder}",
             "port": 2345,
-            "host": "192.168.0.177",
+            "host": "${config:remoteHost}",
             "preLaunchTask": "debug-remote",
             "postDebugTask": "stop-remote-debug"        }
     ]

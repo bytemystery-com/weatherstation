@@ -247,6 +247,9 @@ func GetRam() (used, total uint32, err error) {
 	return memTotal - memAvailable, memTotal, nil
 }
 
+// sudo -E rpi-eeprom-config --edit
+// POWER_OFF_ON_HALT=1
+// WAKE_ON_GPIO=0
 func Restart(config *cfg.Cfg) {
 	go func() {
 		RebbotRequested.Store(true)

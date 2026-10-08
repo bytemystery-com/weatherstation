@@ -1,0 +1,85 @@
+sudo apt install libssl-dev
+sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+git clone --depth=1 -b rpi-7.2.y https://github.com/raspberrypi/linux.git
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-linux-gnu-
+make bcm2712_defconfig
+
+# CONFIG_BLK_DEV_IO_TRACE is not set
+* Kernel hacking / Tracers off
+	# CONFIG_FTRACE is not set
+	# CONFIG_FTRACE_SYSCALLS is not set
+	# CONFIG_FUNCTION_PROFILER is not set
+	# CONFIG_SCHED_TRACER is not set
+* Kernel hacking / Generic Kernel Debugging Instruments off
+	# CONFIG_KDB_KEYBOARD is not set
+	# CONFIG_KGDB is not set
+	# CONFIG_KGDB_KDB is not set
+# CONFIG_LEDS_TRIGGER_CPU is not set
+# CONFIG_NET_ACT_CTINFO is not set
+# CONFIG_KVM is not set
+* Virtualization / Kernel-based Virtual Machine (KVM) support
+	# CONFIG_VIRTUALIZATION is not set
+# CONFIG_LATENCYTOP is not set
+CONFIG_LOCALVERSION_AUTO on
+CONFIG_LOCALVERSION="-weatherd"
+
+time make -j$(nproc) bindeb-pkg
+time make -j$(nproc) Image.gz modules dtbs
+arch/arm64/boot/Image.gz
+
+tar -cjf kernel.txz arch/arm64/boot/Image.gz arch/arm64/boot/dts/broadcom/*.dtb arch/arm64/boot/dts/overlays/*.dtb* arch/arm64/boot/dts/overlays/README ../*.deb
+
+
+sudo dpkg -i linux-headers-*.deb
+sudo dpkg -i linux-image-*.deb
+sudo dpkg -i linux-libc-dev
+
+sudo mkdir /boot/firmware/weatherstation
+sudo mkdir /boot/firmware/weatherstation/overlays
+sudo cp arch/arm64/boot/Image.gz /boot/firmware/weatherstation/kernel-weatherstation.img
+sudo cp arch/arm64/boot/dts/broadcom/*.dtb /boot/firmware/weatherstation/
+sudo cp arch/arm64/boot/dts/overlays/*.dtb* /boot/firmware/weatherstation/overlays
+sudo cp arch/arm64/boot/dts/overlays/README /boot/firmware/weatherstation/overlays
+sudo cp -v /boot/firmware/cmdline.txt /boot/firmware/weatherstation/cmdline.txt
+
+sudo mkinitramfs -o /boot/firmware/weatherstation/initramfs-weatherstation 7.2.9-watherstation-g53679a5788f7
+
+
+in /boot/firmware/config.txt
+
+******************************************************
+os_prefix=weatherstation/
+kernel=kernel-weatherstation.img
+initramfs initramfs-weatherstation followkernel
+
+dtoverlay=disable-bt
+dtparam=i2c_arm=on
+dtparam=i2c_arm_baudrate=100000
+
+******************************************************
+sudo -E rpi-eeprom-config --edit
+POWER_OFF_ON_HALT=1
+WAKE_ON_GPIO=0
+
+aus /boot/firmware/weatherstation/cmdline.txt
+console=serial0,115200 raus
+******************************************************
+
+systemctl --user list-units --type=service
+
+sudo systemctl disable --now serial-getty@ttyAMA10.service
+sudo systemctl disable --now bluetooth.service
+sudo systemctl disable --now getty@tty1.service
+sudo systemctl disable --now systemd-hostnamed.service
+# sudo systemctl disable --now avahi-daemon.service 
+
+-- REBOOT --
+sudo SKIP_KERNEL=1 PRUNE_MODULES=1 rpi-update rpi-7.2.y
+sudo apt update
+sudo apt -y full-upgrade
+sudo apt -y auto-remove
+
+
+
