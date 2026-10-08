@@ -178,15 +178,16 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	type raspiStatus struct {
-		Fan         int    `json:"fan"`
-		CpuUsage    int    `json:"cpu"`
-		Temperature int    `json:"temp"`
-		Voltage_5v  int    `json:"voltage_5"`
-		Serial      string `json:"serial"`
-		Version     uint16 `json:"version"`
-		Throttle    uint32 `json:"throttle"`
-		Ram_used    uint32 `json:"ram_u"`
-		Ram_total   uint32 `json:"ram_t"`
+		Fan          int    `json:"fan"`
+		CpuUsage     int    `json:"cpu"`
+		CpuFrequency int    `json:"cpu_freq"` // MHz
+		Temperature  int    `json:"temp"`
+		Voltage_5v   int    `json:"voltage_5"`
+		Serial       string `json:"serial"`
+		Version      uint16 `json:"version"`
+		Throttle     uint32 `json:"throttle"`
+		Ram_used     uint32 `json:"ram_u"`
+		Ram_total    uint32 `json:"ram_t"`
 	}
 	type status struct {
 		Version                string      `json:"version"`
@@ -232,6 +233,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	}
 	raspiRpm, _ := raspi.GetFanRPM()
 	raspiCpu, _ := raspi.GetCpuUsage()
+	raspiCpuFreq, _ := raspi.GetCPUFrequency()
 	raspiTemp, _ := raspi.GetTemperature()
 	raspiVoltage, _ := raspi.Get5VVoltage()
 	raspiVersion, _ := raspi.GetSysVersion()
@@ -259,15 +261,16 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 				Total: raspiDiskTotal,
 			},
 			RaspiStatus: raspiStatus{
-				Fan:         raspiRpm,
-				CpuUsage:    int(raspiCpu),
-				Temperature: raspiTemp / 100,
-				Voltage_5v:  raspiVoltage,
-				Serial:      raspiSerial,
-				Version:     raspiVersion,
-				Throttle:    raspiThrottle,
-				Ram_used:    raspiRamUsed,
-				Ram_total:   raspiRamTotal,
+				Fan:          raspiRpm,
+				CpuUsage:     int(raspiCpu),
+				CpuFrequency: int(raspiCpuFreq / 1000000),
+				Temperature:  raspiTemp / 100,
+				Voltage_5v:   raspiVoltage,
+				Serial:       raspiSerial,
+				Version:      raspiVersion,
+				Throttle:     raspiThrottle,
+				Ram_used:     raspiRamUsed,
+				Ram_total:    raspiRamTotal,
 			},
 		},
 		Sensors: list,

@@ -302,6 +302,8 @@ function doPeriodic()
 						tmp.textContent = json.status.raspi.fan + " rpm";
 					if (tmp = document.getElementById("sysstat_cpu"))
 						tmp.textContent = (json.status.raspi.cpu/10.0).toFixed(1) + " %";
+					if (tmp = document.getElementById("sysstat_cpu_freq"))
+						tmp.textContent = (json.status.raspi.cpu_freq/1000.0).toFixed(2) + " GHz";
 					if (tmp = document.getElementById("sysstat_temperature"))
 						tmp.textContent = (json.status.raspi.temp/10.0).toFixed(1) + " °C";
 					if (tmp = document.getElementById("sysstat_5volt"))

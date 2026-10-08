@@ -42,6 +42,21 @@ import (
 
 var RebbotRequested atomic.Bool
 
+func GetCPUFrequency() (uint64, error) {
+	out, err := exec.Command("vcgencmd", "measure_clock", "arm").Output()
+	if err != nil {
+		return 0, err
+	}
+
+	var hz uint64
+	_, err = fmt.Sscanf(string(out), "frequency(0)=%d", &hz)
+	if err != nil {
+		return 0, err
+	}
+
+	return hz, nil
+}
+
 func GetFanRPM() (int, error) {
 	entries, err := os.ReadDir("/sys/class/hwmon")
 	if err != nil {
