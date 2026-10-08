@@ -362,7 +362,12 @@ func (sd *SdData) GetData(startTime, endTime time.Time) ([]byte, error) {
 		},
 		Entries: make([]csvEntry, 0, 500),
 	}
-	days := endTime.Sub(startTime)/(24*time.Hour) + 1
+	start := time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
+	end := time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 0, 0, 0, 0, endTime.Location())
+	days := 0
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+    	days++
+	}
 	var path string
 	var date time.Time
 	for day := range days {
