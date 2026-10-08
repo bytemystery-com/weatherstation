@@ -76,6 +76,10 @@ const (
 	KEY_GENERAL_HEATER_MAINT_INTERVAL   = "HeaterMaintInterval"
 	KEY_GENERAL_PRESSURE_TREND_INTERVAL = "PressureTrendInterval"
 
+	SECTION_NETWORK             = "network"
+	KEY_NETWORK_WEB_PORT        = "WebServerPort"
+	KEY_NETWORK_WEB_PORT_NOROOT = "WebServerPortNonRoot"
+
 	SECTION_SYSTEM               = "system"
 	KEY_SYSTEM_RESTART_POFF_TIME = "PoweroffTime"
 
@@ -98,6 +102,8 @@ const (
 	DEF_HEATER_INTERVAL         = 60   // min
 	DEF_HEATER_MAINT_INTERVAL   = 168  // Hours
 	DEF_PRESSURE_TREND_INTERVAL = 60   // sec
+	DEF_WEBSERVER_PORT          = 80
+	DEF_WEBSERVER_PORT_NOROOT   = 8080
 )
 
 type Cfg struct {
@@ -243,6 +249,9 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_INTERVAL, DEF_HEATER_INTERVAL, "Heater interval [min]")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_MAINT_INTERVAL, DEF_HEATER_MAINT_INTERVAL, "Heater maintenance interval [hour]")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_PRESSURE_TREND_INTERVAL, DEF_PRESSURE_TREND_INTERVAL, "Interval for pressure trend data [sec]")
+
+	c.SetIntValue(SECTION_NETWORK, KEY_NETWORK_WEB_PORT, DEF_WEBSERVER_PORT, "Port for webser if running as root")
+	c.SetIntValue(SECTION_NETWORK, KEY_NETWORK_WEB_PORT_NOROOT, DEF_WEBSERVER_PORT_NOROOT, "Port for webser if not running as root")
 
 	c.SetIntValue(SECTION_SYSTEM, KEY_SYSTEM_RESTART_POFF_TIME, DEF_RESTART_POFF_TIME, "Restart after restart command [sec]")
 

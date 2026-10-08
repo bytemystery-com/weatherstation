@@ -39,6 +39,8 @@ import (
 	"weatherd/sd"
 	"weatherd/sensors"
 	"weatherd/webserver"
+
+	"github.com/go-delve/delve/pkg/config"
 )
 
 var Data data.Data
@@ -207,7 +209,14 @@ func main() {
 		return
 	}
 
-	Data.WebServer = webserver.NewWebServer(8080, callBacks, Data.Config, Data.SdData)
+	var port int
+	if helper.IsRoot() {
+		port = config.GetConfigFilePath(cfg.SECTION_NETWORK, cfg.KEY_NETWORK_WEB_PORT, cfg.DEF_WEBSERVER_PORT)
+	} else {
+		port = config.GetConfigFilePath(cfg.SECTION_NETWORK, cfg.KEY_NETWORK_WEB_PORT_NOROOT, cfg.DEF_WEBSERVER_PORT_NOROOT)
+	}
+
+	Data.WebServer = webserver.NewWebServer(port, callBacks, Data.Config, Data.SdData)
 	webError := make(chan error, 1)
 	Data.WebServer.StartWebServer(webError)
 

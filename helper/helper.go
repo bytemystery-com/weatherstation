@@ -227,3 +227,12 @@ func CalculateRegression(x, y []float64) (a1, a0, goodness float64) {
 	}
 	return
 }
+
+func IsRoot() bool {
+	if os.Getuid() == 0 {
+		return true
+	} else if os.Geteuid() == 0 {
+		return true
+	}
+	return false
+}
