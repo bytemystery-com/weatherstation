@@ -270,7 +270,7 @@ func Restart(config *cfg.Cfg) {
 		RebbotRequested.Store(true)
 
 		time.Sleep(3 * time.Second)
-		cmd := exec.Command("sh", "-c", fmt.Sprintf("echo +%d > /sys/class/rtc/rtc0/wakealarm", config.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)))
+		cmd := exec.Command("sh", "-c", fmt.Sprintf("echo +%d > /sys/class/rtc/rtc0/wakealarm", config.GetIntValue(cfg.SECTION_SYSTEM, cfg.KEY_SYSTEM_RESTART_POFF_TIME, cfg.DEF_RESTART_POFF_TIME)))
 		err := cmd.Run()
 		if err == nil {
 			config.SetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, config.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)+1, "")

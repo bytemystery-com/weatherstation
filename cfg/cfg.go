@@ -104,6 +104,7 @@ const (
 	DEF_PRESSURE_TREND_INTERVAL = 60   // sec
 	DEF_WEBSERVER_PORT          = 80
 	DEF_WEBSERVER_PORT_NOROOT   = 8080
+	DEF_REBOOT_WAIT             = 60 // sec
 )
 
 type Cfg struct {
