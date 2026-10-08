@@ -36,6 +36,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -414,8 +415,13 @@ func (ws *WebServer) getSd(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	w.Header().Set("Content-Disposition",
-		fmt.Sprintf(`attachment; filename="%s"`, info.Name()))
+	if strings.EqualFold(filepath.Ext(info.Name()), ".png") {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Content-Disposition", "inline")
+	} else {
+		w.Header().Set("Content-Disposition",
+			fmt.Sprintf(`attachment; filename="%s"`, info.Name()))
+	}
 	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 }
 

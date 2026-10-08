@@ -1,0 +1,4 @@
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+*/15 * * * *   root  /root/bin/temp.sh >/dev/null 2>&1 &
+

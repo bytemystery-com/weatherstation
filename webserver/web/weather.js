@@ -668,7 +668,8 @@ function doLoadFiles(start_dir)
 						item = document.createElement("a");
 						item.setAttribute("class", "file");
 						item.setAttribute("href", "getsd?file=" + json.path + "/" + json.files[index].name);
-						item.setAttribute("download", json.files[index].name);
+						if (!json.files[index].name.toLowerCase().endsWith(".png"))
+    						item.setAttribute("download", json.files[index].name);						
 						item.innerHTML = json.files[index].name;
 						tmp.appendChild(item);
 						tmp.appendChild(document.createElement("br"));
