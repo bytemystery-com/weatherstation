@@ -1,9 +1,9 @@
-const version = "v3.0";
+const version = "v3.1";
 
 var updateDataTimer = null;
 var updateDataTimerGraph = null;
 
-var debug = 0;
+var debug = 1;
 
 var updateInterval = 5000;
 var updateIntervalGraph = 30000;

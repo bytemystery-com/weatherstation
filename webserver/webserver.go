@@ -436,10 +436,13 @@ func (ws *WebServer) getData(w http.ResponseWriter, r *http.Request) {
 	if start == "" {
 		startTime = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	} else {
-		startTime, err = time.Parse("2006-01-02_15-04-05", start)
+		startTime, err = time.ParseInLocation("2006-01-02_15-04-05", start, time.Local)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			startTime, err = time.ParseInLocation("2006-01-02", start, time.Local)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 	}
 
@@ -447,14 +450,16 @@ func (ws *WebServer) getData(w http.ResponseWriter, r *http.Request) {
 	if end == "" {
 		endTime = now
 	} else {
-		endTime, err = time.Parse("2006-01-02_15-04-05", end)
+		endTime, err = time.ParseInLocation("2006-01-02_15-04-05", end, time.Local)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			endTime, err = time.ParseInLocation("2006-01-02", end, time.Local)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			endTime = endTime.Add(24*time.Hour - time.Second)
 		}
 	}
-	_ = startTime
-	_ = endTime
 	data, err := ws.sdData.GetData(startTime, endTime)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
