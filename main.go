@@ -25,7 +25,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io"
+	"log"
 	"math"
 	"os"
 	"time"
@@ -100,6 +103,20 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 var callBacks WebCallbacksImpl
 
 func main() {
+	debug := flag.Bool("d", false, "debug")
+	flag.Parse()
+	/*
+		w, err := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "weatherd")
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.SetOutput(w)
+	*/
+
+	if !*debug {
+		log.SetOutput(io.Discard)
+	}
+
 	cfgFile := os.Getenv("WEATHERD_INI_FILE")
 	if cfgFile == "" {
 		cfgFile = cfg.DEF_CFG_FILE

@@ -29,7 +29,7 @@
                 "psyst",
                 "ssh",
                 "psyst@192.168.0.177",
-                "/home/psyst/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec /home/psyst/goweather/weatherd"
+                "/home/psyst/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec /home/psyst/goweather/weatherd -- -d"
             ],
             "isBackground": true,
             "problemMatcher": {
