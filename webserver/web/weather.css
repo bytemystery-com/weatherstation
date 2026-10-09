@@ -74,8 +74,9 @@ legend
 .status_box_summary
 {
 	float: left;
-	/* height: 29.0em; */
-	margin-right: 10px;
+	width: 21em;
+	margin-left: 20px;
+	margin-top: 10px;
 }
 
 .box_status
@@ -100,8 +101,8 @@ legend
 .block_status
 {
 	float: left;
-	margin-right: 50px;
-	width: 17.5em;
+	margin-right: 0px;
+	width: 21.5em;
 	margin-top: 0.2em;
 }
 
@@ -109,7 +110,7 @@ legend
 {
 	border-collapse: separate;
 	border-spacing: 0 0.4em;
-	width: 20em;
+	width: 22em;
 }
 
 .status_tr
@@ -127,7 +128,8 @@ legend
 	padding-left: 10px;
 	padding-top: 5px;
 	padding-bottom: 5px;
-	width: 20em;
+	width: 21.5em;
+    white-space: nowrap;
 }
 
 .dir
@@ -255,7 +257,7 @@ legend
 .sysstat_box
 {
 	float: left;
-	width: 25em;
+	width: 21em;
 	margin-left: 20px;
 	margin-top: 10px;
 }

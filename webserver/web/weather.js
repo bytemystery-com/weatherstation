@@ -295,6 +295,8 @@ function doPeriodic()
 					tmp.textContent = json.sensors[2].lux2.toFixed(1) + " lx";
 				if (tmp = document.getElementById("summary_errors"))
 					tmp.textContent = json.status.errors + " / " + json.status.resets;
+				if (tmp = document.getElementById("summary_sensors"))
+					tmp.textContent = json.sensors.map(sensor => sensor.name).join(", ").toLowerCase();
 				
 				if (json.status.raspi !== undefined)
 				{
@@ -308,6 +310,8 @@ function doPeriodic()
 						tmp.textContent = (json.status.raspi.temp/10.0).toFixed(1) + " °C";
 					if (tmp = document.getElementById("sysstat_5volt"))
 						tmp.textContent = (json.status.raspi.voltage_5/1000.0).toFixed(2) + " V";
+					if (tmp = document.getElementById("sysstat_3volt"))
+						tmp.textContent = (json.status.raspi.voltage_3/1000.0).toFixed(2) + " V";
 					if (tmp = document.getElementById("sysstat_serial"))
 						tmp.textContent = json.status.raspi.serial;
 					if (tmp = document.getElementById("sysstat_throttle"))

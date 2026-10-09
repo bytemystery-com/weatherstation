@@ -184,6 +184,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 		CpuFrequency int    `json:"cpu_freq"` // MHz
 		Temperature  int    `json:"temp"`
 		Voltage_5v   int    `json:"voltage_5"`
+		Voltage_3v   int    `json:"voltage_3"`
 		Serial       string `json:"serial"`
 		Version      uint16 `json:"version"`
 		Throttle     uint32 `json:"throttle"`
@@ -225,7 +226,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	t.Sec = now.Second()
 	t.Dst = ws.isDST(now)
 
-	var errors uint = 0
+	var errors uint
 	for _, item := range list {
 		data, ok := item.(HasErrors)
 		if ok {
@@ -236,7 +237,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	raspiCpu, _ := raspi.GetCpuUsage()
 	raspiCpuFreq, _ := raspi.GetCPUFrequency()
 	raspiTemp, _ := raspi.GetTemperature()
-	raspiVoltage, _ := raspi.Get5VVoltage()
+	raspiVoltage5, raspiVoltage3, _ := raspi.GetVoltages()
 	raspiVersion, _ := raspi.GetSysVersion()
 	raspiThrottle, _ := raspi.GetThrottled()
 	raspiSerial, _ := raspi.GetSerial()
@@ -266,7 +267,8 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 				CpuUsage:     int(raspiCpu),
 				CpuFrequency: int(raspiCpuFreq / 1000000),
 				Temperature:  raspiTemp / 100,
-				Voltage_5v:   raspiVoltage,
+				Voltage_5v:   raspiVoltage5,
+				Voltage_3v:   raspiVoltage3,
 				Serial:       raspiSerial,
 				Version:      raspiVersion,
 				Throttle:     raspiThrottle,

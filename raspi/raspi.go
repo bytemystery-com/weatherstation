@@ -159,6 +159,68 @@ func GetTemperature() (int, error) {
 	return temp, nil
 }
 
+// in mV
+func GetVoltages() (v5, v3v3 int, err error) {
+	out, err := exec.Command("vcgencmd", "pmic_read_adc", "3V3_SYS_V", "EXT5V_V").Output()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	for _, line := range strings.Split(string(out), "\n") {
+		name, rest, ok := strings.Cut(strings.TrimSpace(line), " ")
+		if !ok {
+			continue
+		}
+
+		_, value, ok := strings.Cut(rest, "=")
+		if !ok {
+			continue
+		}
+
+		value = strings.TrimSuffix(strings.TrimSpace(value), "V")
+		v, parseErr := strconv.ParseFloat(value, 64)
+		if parseErr != nil {
+			continue
+		}
+
+		switch name {
+		case "3V3_SYS_V":
+			v3v3 = int(v * 1000)
+		case "EXT5V_V":
+			v5 = int(v * 1000)
+		}
+	}
+
+	if v5 == 0 || v3v3 == 0 {
+		return 0, 0, fmt.Errorf("Spannungsmessung unvollständig: 5 V=%d mV, 3,3 V=%d mV", v5, v3v3)
+	}
+
+	return v5, v3v3, nil
+}
+
+// in mv
+func Get3V3() (int, error) {
+	out, err := exec.Command("vcgencmd", "pmic_read_adc", "3V3_SYS_V").Output()
+	if err != nil {
+		return 0, err
+	}
+
+	// Beispiel: 3V3_SYS_V volt(9)=3.32580900V
+	s := strings.TrimSpace(string(out))
+	_, value, ok := strings.Cut(s, "=")
+	if !ok {
+		return 0, fmt.Errorf("unerwartete Ausgabe: %s", s)
+	}
+
+	value = strings.TrimSuffix(value, "V")
+	v, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(v * 1000), nil
+}
+
 // in mv
 func Get5VVoltage() (int, error) {
 	cmd := exec.Command("vcgencmd", "pmic_read_adc", "EXT5V_V")
