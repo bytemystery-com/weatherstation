@@ -75,7 +75,8 @@ function doSetValues(form)
 {
 	if (data_request)
 		data_request.abort();
-
+	console.log(document.getElementById("p_fc2"));
+	
 	var request = new XMLHttpRequest();
 	request.open(form.method, form.action, true);
 	noCacheInRequest(request);
