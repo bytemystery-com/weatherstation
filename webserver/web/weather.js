@@ -3,7 +3,7 @@ const version = "v3.1";
 var updateDataTimer = null;
 var updateDataTimerGraph = null;
 
-var debug = 1;
+var debug = 0;
 
 var updateInterval = 5000;
 var updateIntervalGraph = 30000;
