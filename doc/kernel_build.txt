@@ -83,3 +83,12 @@ sudo apt -y auto-remove
 
 
 
+rfkill list
+nmcli device status
+nmcli device wifi list
+sudo nmcli device wifi connect "reporo" --ask \
+  ifname wlan0 bssid 7C:FF:4D:E7:42:4F
+  
+sudo nmcli connection modify "Kabelgebundene Verbindung 1" \
+    connection.autoconnect no
+sudo nmcli device disconnect eth0
