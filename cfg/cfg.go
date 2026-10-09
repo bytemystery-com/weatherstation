@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.2"
+	WEATHER_STATION_VERSION = "2.3"
 
 	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
 
