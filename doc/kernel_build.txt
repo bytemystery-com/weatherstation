@@ -58,6 +58,10 @@ dtoverlay=disable-bt
 dtparam=i2c_arm=on
 dtparam=i2c_arm_baudrate=100000
 
+dtparam=act_led_trigger=none
+dtparam=act_led_activelow=off
+video=HDMI-A-1:d video=HDMI-A-2:d
+
 ******************************************************
 sudo -E rpi-eeprom-config --edit
 POWER_OFF_ON_HALT=1
