@@ -121,13 +121,7 @@ func NewWebServer(port int, callBacks WebCallBacks, config *cfg.Cfg, sdData *sd.
 }
 
 func (ws *WebServer) getUptime() string {
-	data, err := os.ReadFile("/proc/uptime")
-	if err != nil {
-		return ""
-	}
-
-	var seconds float64
-	_, err = fmt.Sscanf(string(data), "%f", &seconds)
+	seconds, err := raspi.GetUptime()
 	if err != nil {
 		return ""
 	}
@@ -479,6 +473,134 @@ func (ws *WebServer) getData(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+func (ws *WebServer) query(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		http.Error(w, "query parameter is missing", http.StatusBadRequest)
+		return
+	}
+	data := ws.callBacks.GetData()
+	response := ""
+	switch q {
+	case "t":
+		response = fmt.Sprintf("%.1f", data.Humidity.Temperature)
+	case "t2":
+		response = fmt.Sprintf("%.1f", data.Humidity.Temperature2)
+	case "h":
+		response = fmt.Sprintf("%.1f", data.Humidity.Humidity)
+	case "h2":
+		response = fmt.Sprintf("%.1f", data.Humidity.Humidity2)
+	case "d":
+		response = fmt.Sprintf("%.1f", data.Humidity.DewPoint)
+	case "d2":
+		response = fmt.Sprintf("%.1f", data.Humidity.DewPoint2)
+	case "p":
+		response = fmt.Sprintf("%.1f", data.Pressure.Pressure)
+	case "pn":
+		response = fmt.Sprintf("%.1f", data.Pressure.PressureNormal)
+	case "p2":
+		response = fmt.Sprintf("%.1f", data.Pressure.Pressure2)
+	case "pn2":
+		response = fmt.Sprintf("%.1f", data.Pressure.Pressure2Normal)
+	case "l":
+		response = fmt.Sprintf("%.1f", data.Lux.Lux)
+	case "l2":
+		response = fmt.Sprintf("%.1f", data.Lux.Lux2)
+	case "pt1":
+		response = fmt.Sprintf("%.2f", data.Pressure.PressureTrend1)
+	case "pt3":
+		response = fmt.Sprintf("%.2f", data.Pressure.PressureTrend3)
+	case "tp":
+		response = fmt.Sprintf("%.1f", data.Pressure.Temperature)
+	case "tp2":
+		response = fmt.Sprintf("%.1f", data.Pressure.Temperature2)
+	case "version":
+		response = fmt.Sprintf("%s", cfg.WEATHER_STATION_VERSION)
+	case "r_temperature":
+		val, err := raspi.GetTemperature()
+		if err == nil {
+			response = fmt.Sprintf("%.1f", float32(val)/1000.0)
+		}
+	case "r_fan":
+		val, err := raspi.GetFanRPM()
+		if err == nil {
+			response = fmt.Sprintf("%d", val)
+		}
+	case "r_cpu_usage":
+		val, err := raspi.GetCpuUsage()
+		if err == nil {
+			response = fmt.Sprintf("%.1f", float32(val)/10.0)
+		}
+	case "r_cpu_frequency":
+		val, err := raspi.GetCPUFrequency()
+		if err == nil {
+			response = fmt.Sprintf("%.0f", float32(val)/1000000.0)
+		}
+	case "r_ram_used":
+		val, _, err := raspi.GetRam()
+		if err == nil {
+			response = fmt.Sprintf("%d", val)
+		}
+	case "r_ram_total":
+		_, val, err := raspi.GetRam()
+		if err == nil {
+			response = fmt.Sprintf("%d", val)
+		}
+	case "r_voltage_5":
+		val, err := raspi.Get5VVoltage()
+		if err == nil {
+			response = fmt.Sprintf("%.2f", float32(val)/1000.0)
+		}
+	case "r_voltage_33":
+		val, err := raspi.Get3V3()
+		if err == nil {
+			response = fmt.Sprintf("%.2f", float32(val)/1000.0)
+		}
+	case "r_throttle":
+		val, err := raspi.GetThrottled()
+		if err == nil {
+			response = fmt.Sprintf("0x%08x", val)
+		}
+	case "r_serial":
+		val, err := raspi.GetSerial()
+		if err == nil {
+			response = fmt.Sprintf("%s", val)
+		}
+	case "r_sd_free":
+		val, _, err := raspi.GetDiskSpace()
+		if err == nil {
+			response = fmt.Sprintf("%d", val)
+		}
+	case "r_sd_total":
+		_, val, err := raspi.GetDiskSpace()
+		if err == nil {
+			response = fmt.Sprintf("%d", val)
+		}
+	case "r_date":
+		now := time.Now()
+		response = now.Format(time.RFC3339)
+	case "r_uptime":
+		val, err := raspi.GetUptime()
+		if err == nil {
+			response = fmt.Sprintf("%d", val)
+		}
+	case "r_version":
+		val, err := raspi.GetSysVersion()
+		if err == nil {
+			response = fmt.Sprintf("%d.%d", (val>>8)&0xFF, val&0xFF)
+		}
+	default:
+		response = ""
+	}
+	if response == "" {
+		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(response))
+}
+
 func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux := http.NewServeMux()
 	webFS, err := fs.Sub(webFiles, "web")
@@ -504,6 +626,7 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux.HandleFunc("GET /listsd", ws.listSd)
 	mux.HandleFunc("GET /getsd", ws.getSd)
 	mux.HandleFunc("GET /getdata", ws.getData)
+	mux.HandleFunc("GET /query", ws.query)
 
 	handler := ws.auth(mux)
 	handler = ws.log(handler)

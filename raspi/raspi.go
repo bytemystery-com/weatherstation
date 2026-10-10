@@ -42,6 +42,7 @@ import (
 
 var RebbotRequested atomic.Bool
 
+// in Hz
 func GetCPUFrequency() (uint64, error) {
 	out, err := exec.Command("vcgencmd", "measure_clock", "arm").Output()
 	if err != nil {
@@ -139,10 +140,12 @@ func (c *cpuUsage) get() (uint16, error) {
 	return uint16(1000 * (1.0 - float64(idleDelta)/float64(totalDelta))), nil
 }
 
+// in %*10
 func GetCpuUsage() (uint16, error) {
 	return cpuUsageData.get()
 }
 
+// returns temperature*100
 func GetTemperature() (int, error) {
 	data, err := os.ReadFile("/sys/class/thermal/thermal_zone0/temp")
 	if err != nil {
@@ -297,6 +300,7 @@ func GetSerial() (string, error) {
 	return strings.TrimLeft(strings.TrimRight(string(data), "\x00\r\n "), "\x00\r\n "), nil
 }
 
+// in kB
 func GetRam() (used, total uint32, err error) {
 	data, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
@@ -341,6 +345,7 @@ func Restart(config *cfg.Cfg) {
 	}()
 }
 
+// kB
 func GetDiskSpace() (free, total uint64, err error) {
 	var stat syscall.Statfs_t
 
@@ -352,4 +357,19 @@ func GetDiskSpace() (free, total uint64, err error) {
 	free = stat.Bavail * uint64(stat.Bsize) / 1024
 
 	return free, total, nil
+}
+
+// sec
+func GetUptime() (uint32, error) {
+	data, err := os.ReadFile("/proc/uptime")
+	if err != nil {
+		return 0, err
+	}
+
+	var seconds float64
+	_, err = fmt.Sscanf(string(data), "%f", &seconds)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(seconds), nil
 }
