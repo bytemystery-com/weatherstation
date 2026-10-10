@@ -515,7 +515,7 @@ func (ws *WebServer) query(w http.ResponseWriter, r *http.Request) {
 		response = fmt.Sprintf("%.1f", data.Pressure.Temperature)
 	case "tp2":
 		response = fmt.Sprintf("%.1f", data.Pressure.Temperature2)
-	case "version":
+	case "v":
 		response = fmt.Sprintf("%s", cfg.WEATHER_STATION_VERSION)
 	case "r_temperature":
 		val, err := raspi.GetTemperature()
@@ -595,6 +595,39 @@ func (ws *WebServer) query(w http.ResponseWriter, r *http.Request) {
 	}
 	if response == "" {
 		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
+		response = "\nMeasure data:\n" +
+			"t		Temperature from humidity sensor (short) in °C\n" +
+			"t2		Temperature from humidity sensor (long) in °C\n" +
+			"h		Humidity (short) in %\n" +
+			"h2		Humidity (long) in %\n" +
+			"d		Dew point (short) in °C\n" +
+			"d2		Dew point (long) in °C\n" +
+			"p		Pressure (short) in hPa\n" +
+			"p2		Pressure (long) in hPa\n" +
+			"pn		Pressure normal (short) in hPa\n" +
+			"pn2		Pressure normal (long) in hPa\n" +
+			"l		Ambient light (short) in Lu\n" +
+			"l2		Ambient light (long) in Lu\n" +
+			"pt1		Pressurer trend - 1 hour\n" +
+			"pt3		Pressurer trend - 3 hours\n" +
+			"\n" +
+			"Raspberry data:\n" +
+			"r_temperature		Raspberry temperature\n" +
+			"r_fan			Raspberry fan in rpm\n" +
+			"r_cpu_usage		Raspberry CPU usage in %\n" +
+			"r_cpu_frquency		Raspberry CPU frequency in MHz\n" +
+			"r_ram_used		Raspberry used RAM in kB\n" +
+			"r_ram_total		Raspberry Total RAM in kB\n" +
+			"r_voltage_5		Raspberry 5 Volt monitoring in V\n" +
+			"r_voltage_33		Raspberry 3.3 Volt monitoring in V\n" +
+			"r_throttle		Raspberry throttle\n" +
+			"r_serial		Raspberry serial number\n" +
+			"r_sd_free		Raspberry free space of SD card in kB\n" +
+			"r_sd_total		Raspberry total space of SD card in kB\n" +
+			"r_date			Raspberry system date / time in  RFC3339\n" +
+			"r_uptime		Raspberry system uptime in sec\n" +
+			"r_version		Raspberry system version\n"
+		_, _ = w.Write([]byte(response))
 		return
 	}
 	w.WriteHeader(http.StatusOK)
