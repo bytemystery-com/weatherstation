@@ -58,6 +58,13 @@ func GetCPUFrequency() (uint64, error) {
 	return hz, nil
 }
 
+/*
+https://www.raspberrypi.com/news/heating-and-cooling-raspberry-pi-5/
+It is actively managed by the Raspberry Pi firmware:
+at 60°C the blower’s fan will be turned on,
+at 67.5°C fan speed will be increased,
+and finally at 75°C the fan increases to full speed
+*/
 func GetFanRPM() (int, error) {
 	entries, err := os.ReadDir("/sys/class/hwmon")
 	if err != nil {
@@ -249,6 +256,21 @@ func Get5VVoltage() (int, error) {
 
 	return int(voltage*1000.0 + 0.5), nil
 }
+
+/*
+https://www.raspberrypi.com/documentation/computers/os.html
+now:
+0x1			Undervoltage detected
+0x2			Arm frequency capped
+0x4			Currently throttled
+0x8			Soft temperature limit active
+
+since last boot:
+0x10000		Undervoltage has occurred
+0x20000		Arm frequency capping has occurred
+0x40000		Throttling has occurred
+0x80000		Soft temperature limit has occurred
+*/
 
 func GetThrottled() (uint32, error) {
 	cmd := exec.Command("vcgencmd", "get_throttled")
