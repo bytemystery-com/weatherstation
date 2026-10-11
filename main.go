@@ -127,6 +127,7 @@ func main() {
 		log.SetOutput(w)
 	*/
 	log.Printf("Debug: %v", debug)
+	// journalctl -u weatherd.service
 
 	if !debug {
 		log.SetOutput(io.Discard)
