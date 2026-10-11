@@ -37,6 +37,7 @@ import (
 	"weatherd/cfg"
 	"weatherd/data"
 	"weatherd/filter"
+	"weatherd/gpio"
 	"weatherd/helper"
 	"weatherd/i2c"
 	"weatherd/raspi"
@@ -106,8 +107,8 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 }
 
 var callBacks WebCallbacksImpl
-
-func main() {
+	gpio.TestGpio()
+	os.Exit(0)
 	var debug bool
 	str := os.Getenv("WEATHERD_DEBUG")
 	if strings.EqualFold(str, "true") || strings.EqualFold(str, "on") || strings.EqualFold(str, "yes") || strings.EqualFold(str, "1") {
