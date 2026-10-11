@@ -30,8 +30,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -141,7 +142,7 @@ func (device *I2cDevice) Transfer(data []I2cData) error {
 		nmsgs: uint32(len(msgs)),
 	}
 	// Do the sys call
-	r1, _, errno := syscall.Syscall(syscall.SYS_IOCTL, device.bus.fd.Fd(), I2C_RDWR, uintptr(unsafe.Pointer(&ioctlData)))
+	r1, _, errno := unix.Syscall(unix.SYS_IOCTL, device.bus.fd.Fd(), I2C_RDWR, uintptr(unsafe.Pointer(&ioctlData)))
 	if errno != 0 {
 		return fmt.Errorf("IOCTL failed with errno %w", errno)
 	}

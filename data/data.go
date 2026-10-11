@@ -29,6 +29,7 @@ import (
 
 	"weatherd/cfg"
 	"weatherd/filter"
+	"weatherd/gpio"
 	"weatherd/sd"
 	"weatherd/sensors"
 	"weatherd/webserver"
@@ -64,4 +65,5 @@ type Data struct {
 	SdData            *sd.SdData
 	Config            *cfg.Cfg
 	PressureTrendData PressureTrendData
+	PinOnStart        *gpio.GpioPin
 }

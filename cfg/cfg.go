@@ -83,6 +83,11 @@ const (
 	SECTION_SYSTEM               = "system"
 	KEY_SYSTEM_RESTART_POFF_TIME = "PoweroffTime"
 
+	SECTION_HARDWARE                         = "hardware"
+	KEY_HARDWARE_I2C_DEV_NUMBER              = "I2CDevNumber"
+	KEY_HARDWARE_SET_PIN_ON_START            = "SetPinOnStart"
+	KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER = "PinOnStartDeviceNumber"
+
 	SECTION_RUN    = "run"
 	KEY_RUN_REBOOT = "Reboots"
 	KEY_RUN_HEATER = "LastHeater"
@@ -91,20 +96,23 @@ const (
 	KEY_DATA_FOLDER   = "Folder"
 	KEY_DATA_INTERVAL = "Interval"
 
-	DEF_HEIGHT                  = 522
-	DEF_NAME                    = "Weather Station"
-	DEF_USE_PASSWORD            = true
-	DEF_UPDATE_INTERVAL         = 1000 // msec
-	DEF_RESTART_POFF_TIME       = 60   // sec
-	DEF_DATA_FOLDER             = "/data"
-	DEF_DATA_INTERVAL           = 300  // sec
-	DEF_MEASURE_INTERVAL        = 1000 // msec
-	DEF_HEATER_INTERVAL         = 60   // min
-	DEF_HEATER_MAINT_INTERVAL   = 168  // Hours
-	DEF_PRESSURE_TREND_INTERVAL = 60   // sec
-	DEF_WEBSERVER_PORT          = 80
-	DEF_WEBSERVER_PORT_NOROOT   = 8080
-	DEF_REBOOT_WAIT             = 60 // sec
+	DEF_HEIGHT                      = 522
+	DEF_NAME                        = "Weather Station"
+	DEF_USE_PASSWORD                = true
+	DEF_UPDATE_INTERVAL             = 1000 // msec
+	DEF_RESTART_POFF_TIME           = 60   // sec
+	DEF_DATA_FOLDER                 = "/data"
+	DEF_DATA_INTERVAL               = 300  // sec
+	DEF_MEASURE_INTERVAL            = 1000 // msec
+	DEF_HEATER_INTERVAL             = 60   // min
+	DEF_HEATER_MAINT_INTERVAL       = 168  // Hours
+	DEF_PRESSURE_TREND_INTERVAL     = 60   // sec
+	DEF_WEBSERVER_PORT              = 80
+	DEF_WEBSERVER_PORT_NOROOT       = 8080
+	DEF_REBOOT_WAIT                 = 60 // sec
+	DEF_I2C_DEV_NUMBER              = 1
+	DEF_SET_PIN_ON_START            = -1 // off
+	DEF_PIN_ON_START_GPIODEV_NUMBER = 15 // off
 )
 
 type Cfg struct {
@@ -255,6 +263,10 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_NETWORK, KEY_NETWORK_WEB_PORT_NOROOT, DEF_WEBSERVER_PORT_NOROOT, "Port for webser if not running as root")
 
 	c.SetIntValue(SECTION_SYSTEM, KEY_SYSTEM_RESTART_POFF_TIME, DEF_RESTART_POFF_TIME, "Restart after restart command [sec]")
+
+	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_I2C_DEV_NUMBER, DEF_I2C_DEV_NUMBER, "I2C bus number")
+	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_SET_PIN_ON_START, DEF_SET_PIN_ON_START, "Set pin to high on start (-1=disabled)")
+	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, DEF_PIN_ON_START_GPIODEV_NUMBER, "Gpio device used for set pin to high on start")
 
 	c.SetStringValue(SECTION_DATA, KEY_DATA_FOLDER, DEF_DATA_FOLDER, "Folder for data (csv files)")
 	c.SetIntValue(SECTION_DATA, KEY_DATA_INTERVAL, DEF_DATA_INTERVAL, "Interval for data write [sec]")

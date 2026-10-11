@@ -106,9 +106,8 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 	return &data
 }
 
-var callBacks WebCallbacksImpl
-	gpio.TestGpio()
-	os.Exit(0)
+func main() {
+	var callBacks WebCallbacksImpl
 	var debug bool
 	str := os.Getenv("WEATHERD_DEBUG")
 	if strings.EqualFold(str, "true") || strings.EqualFold(str, "on") || strings.EqualFold(str, "yes") || strings.EqualFold(str, "1") {
@@ -158,8 +157,20 @@ var callBacks WebCallbacksImpl
 	if err != nil {
 		return
 	}
+	pin := Data.Config.GetIntValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, cfg.DEF_SET_PIN_ON_START)
+	if pin > 0 {
+		pinLine, err := gpio.NewGpioInPin(uint(Data.Config.GetIntValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, cfg.DEF_PIN_ON_START_GPIODEV_NUMBER)),
+			uint(pin), gpio.GpioPullDown)
+		if err != nil {
+			return
+		}
+		Data.PinOnStart = pinLine
+		time.Sleep(250 * time.Millisecond)
+		Data.PinOnStart.Set(true)
+		time.Sleep(250 * time.Millisecond)
+	}
 
-	bus, _ := i2c.NewI2c(1)
+	bus, _ := i2c.NewI2c(Data.Config.GetIntValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_I2C_DEV_NUMBER, cfg.DEF_I2C_DEV_NUMBER))
 	if bus == nil {
 		return
 	}
