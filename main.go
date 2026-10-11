@@ -110,6 +110,7 @@ var callBacks WebCallbacksImpl
 func main() {
 	var debug bool
 	str := os.Getenv("WEATHERD_DEBUG")
+	log.Printf("Debug %s", str)
 	if strings.EqualFold(str, "true") || strings.EqualFold(str, "on") || strings.EqualFold(str, "yes") || strings.EqualFold(str, "1") {
 		debug = true
 	}
