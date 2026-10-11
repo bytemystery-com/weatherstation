@@ -163,7 +163,7 @@ func (veml *Veml7700) init() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("ChipID: %04x", id)
+	log.Printf("VEML7700: ChipID: %04x", id)
 	if !veml.isValidChipId(id) {
 		return fmt.Errorf("Invalid chip id %d", id)
 	}
