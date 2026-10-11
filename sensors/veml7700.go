@@ -350,7 +350,7 @@ func (veml *Veml7700) adjust(raw, cfg uint16) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		log.Printf("VEML7700: adjust from G: %d, I: %d to G: %d, I: %d", GOld, IOld, G, I)
+		// log.Printf("VEML7700: adjust from G: %d, I: %d to G: %d, I: %d", GOld, IOld, G, I)
 		err = veml.configure(g | i)
 		if err != nil {
 			return false, err
@@ -428,14 +428,12 @@ func (veml *Veml7700) measure() (float32, float32, uint16, bool, uint16, error) 
 	// https://www.vishay.com/docs/84323/designingveml7700.pdf?utm_source=chatgpt.com
 	overrun := false
 	if lux >= maxLux {
-		// log.Printf("Lux > Maxlux - 1")
 		overrun = true
 		lux = maxLux
 	} else if lux > 1000 && (gain == VEML7700_GAIN_04 || gain == VEML7700_GAIN_08) {
 		lux = (((6.0135e-13*lux-9.3924e-9)*lux+8.1488e-5)*lux + 1.0023) * lux
 	}
 	if lux >= maxLux {
-		// log.Printf("Lux > Maxlux - 2")
 		overrun = true
 		lux = maxLux
 	}
@@ -498,7 +496,6 @@ func (veml *Veml7700) loop() {
 				veml.state = veml7700States_init
 				log.Printf("VEML7700: measure failed with %v", err)
 			} else {
-				// log.Printf("VEML7700 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
 				veml.shm.lux.Store(uint32(lux * 100.0))
 				veml.shm.overrun.Store(overrun)
 				veml.shm.whiteAlsRatio.Store(uint32(ratio * 1000.0))

@@ -388,6 +388,8 @@ func (bmp *Bmp581) setStandby() (uint8, error) {
 	return oldOdr, nil
 }
 
+/* Does not work
+
 func (bmp *Bmp581) writeNvm(addr byte, value uint16) error {
 	if addr != BMP581_NVM_ADDR_USER1 && addr != BMP581_NVM_ADDR_USER2 && addr != BMP581_NVM_ADDR_USER3 {
 		return fmt.Errorf("Invalid NVM address for write")
@@ -678,6 +680,7 @@ func (bmp *Bmp581) checkNvRam() error {
 	}
 	return nil
 }
+*/
 
 func (bmp *Bmp581) init() error {
 	id, err := bmp.getChipId()

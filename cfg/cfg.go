@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.3"
+	WEATHER_STATION_VERSION = "2.4"
 
 	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
 
@@ -304,7 +304,6 @@ func (c *Cfg) GetJson() []byte {
 	}
 
 	b, _ := json.Marshal(data)
-	log.Print(string(b))
 	return b
 }
 

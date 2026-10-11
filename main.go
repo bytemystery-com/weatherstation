@@ -31,6 +31,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"weatherd/cfg"
@@ -107,8 +108,17 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 var callBacks WebCallbacksImpl
 
 func main() {
-	debug := flag.Bool("d", false, "debug")
+	var debug bool
+	str := os.Getenv("WEATHERD_DEBUG")
+	if strings.EqualFold(str, "true") || strings.EqualFold(str, "on") || strings.EqualFold(str, "yes") || strings.EqualFold(str, "1") {
+		debug = true
+	}
+
+	d := flag.Bool("d", false, "debug")
 	flag.Parse()
+	if *d {
+		debug = true
+	}
 	/*
 		w, err := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "weatherd")
 		if err != nil {
@@ -116,8 +126,9 @@ func main() {
 		}
 		log.SetOutput(w)
 	*/
+	log.Printf("Debug: %v", debug)
 
-	if !*debug {
+	if !debug {
 		log.SetOutput(io.Discard)
 	}
 

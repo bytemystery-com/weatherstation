@@ -428,13 +428,11 @@ func (sht *Sht45) loop() {
 				sht.state = sht45States_init
 				log.Printf("SHT45: measure failed with %v", err)
 			} else {
-				// log.Printf("sht45 lux: %.3f, Overrun: %v, Ratio: %.3f", lux, overrun, ratio)
 				sht.shm.temperature.Store(int32(temperature * 10))
 				sht.shm.humidity.Store(uint32(humidity * 10))
 				sht.shm.isValid.Store(true)
 			}
 			duration = time.Since(start)
-			// log.Printf("SHT45: measure cycle time %d µsec", duration.Microseconds())
 			if duration < sht.measureCycle {
 				sleep = sht.measureCycle - duration
 			} else {

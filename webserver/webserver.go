@@ -32,7 +32,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -391,12 +390,14 @@ func (ws *WebServer) indexHandler(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(data)
 }
 
+/*
 func (ws *WebServer) log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
 		next.ServeHTTP(w, r)
 	})
 }
+*/
 
 func (ws *WebServer) getSd(w http.ResponseWriter, r *http.Request) {
 	file := r.URL.Query().Get("file")
@@ -662,7 +663,7 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	mux.HandleFunc("GET /query", ws.query)
 
 	handler := ws.auth(mux)
-	handler = ws.log(handler)
+	// handler = ws.log(handler)
 
 	ws.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", ws.port),

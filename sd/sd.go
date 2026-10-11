@@ -30,7 +30,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -327,7 +326,6 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 			entry.P2 = entry.P
 			entry.Pn2 = entry.Pn
 		} else {
-			log.Print(line)
 			n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
 				&year, &month, &day, &hour, &min, &sec,
 				&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
@@ -366,7 +364,7 @@ func (sd *SdData) GetData(startTime, endTime time.Time) ([]byte, error) {
 	end := time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 0, 0, 0, 0, endTime.Location())
 	days := 0
 	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
-    	days++
+		days++
 	}
 	var path string
 	var date time.Time
