@@ -24,10 +24,13 @@ Actual and historical data are displayed on a website.
 Author: Reiner Pröls  
 License: MIT  
 
+## Photos
+
+![alt text](/screenshots/raspberry.jpg "Raspberry Pi")
+![alt text](/screenshots/sensorbox.jpg "Sensorbox")
+
 ## Screenshots
 
-![alt text](/screenshots/sensorbox.jpg "Sensorbox")
-![alt text](/screenshots/raspberry.jpg "Raspberry Pi")
 ![alt text](/screenshots/main.jpg "Website main page")
 ![alt text](/screenshots/config.jpg "Website config")
 
