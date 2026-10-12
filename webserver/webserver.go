@@ -649,7 +649,6 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 		http.FileServer(http.FS(webFS)).ServeHTTP(w, r)
 	})
 	mux.HandleFunc("GET /index.html", ws.indexHandler)
-
 	mux.HandleFunc("GET /getcfg", ws.getCfg)
 	mux.HandleFunc("GET /update", ws.getUpdate)
 	mux.HandleFunc("POST /setcfg", ws.setCfg)
@@ -678,10 +677,14 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 
 func (ws *WebServer) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/getdata", "/update", "/query":
+			next.ServeHTTP(w, r)
+			return
+		}
 		if ws.cfg.GetBoolValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_USE_PASSWORD, cfg.DEF_USE_PASSWORD) &&
 			ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "") != "" {
 			_, password, ok := r.BasicAuth()
-
 			realm := fmt.Sprintf("Basic realm=\"%s\"", ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_NAME, cfg.DEF_NAME))
 			if !ok || !helper.CheckPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
 				w.Header().Set("WWW-Authenticate", realm)
