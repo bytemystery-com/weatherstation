@@ -30,6 +30,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -44,6 +45,8 @@ import (
 	"weatherd/sd"
 	"weatherd/sensors"
 	"weatherd/webserver"
+
+	_ "net/http/pprof"
 )
 
 const (
@@ -107,6 +110,11 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 }
 
 func main() {
+	//  go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+	go func() {
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
+
 	var callBacks WebCallbacksImpl
 	var debug bool
 	str := os.Getenv("WEATHERD_DEBUG")
