@@ -110,11 +110,6 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 }
 
 func main() {
-	//  go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
-	go func() {
-		http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
-
 	var callBacks WebCallbacksImpl
 	var debug bool
 	str := os.Getenv("WEATHERD_DEBUG")
@@ -139,6 +134,12 @@ func main() {
 
 	if !debug {
 		log.SetOutput(io.Discard)
+	} else {
+		// curl http://localhost:6060/debug/pprof/
+		//  go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+		go func() {
+			http.ListenAndServe("0.0.0.0:6060", nil)
+		}()
 	}
 
 	cfgFile := os.Getenv("WEATHERD_INI_FILE")
