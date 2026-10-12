@@ -28,6 +28,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -235,4 +236,13 @@ func IsRoot() bool {
 		return true
 	}
 	return false
+}
+
+func NewSessionID() (string, error) {
+	b := make([]byte, 32)
+
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }

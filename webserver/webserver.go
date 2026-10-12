@@ -36,12 +36,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"weatherd/cfg"
 	"weatherd/helper"
 	"weatherd/raspi"
 	"weatherd/sd"
+)
+
+const (
+	WS_SESSION_MAX_AGE         = 14400 // sec
+	WS_REMOVE_SESSION_INTERVAL = 300   // sec
 )
 
 type HasErrors interface {
@@ -102,11 +108,13 @@ type WebCallBacks interface {
 var webFiles embed.FS
 
 type WebServer struct {
-	callBacks WebCallBacks
-	port      int
-	server    *http.Server
-	cfg       *cfg.Cfg
-	sdData    *sd.SdData
+	callBacks    WebCallBacks
+	port         int
+	server       *http.Server
+	cfg          *cfg.Cfg
+	sdData       *sd.SdData
+	sessions     map[string]time.Time
+	sessionsLock sync.RWMutex
 }
 
 func NewWebServer(port int, callBacks WebCallBacks, config *cfg.Cfg, sdData *sd.SdData) *WebServer {
@@ -115,6 +123,7 @@ func NewWebServer(port int, callBacks WebCallBacks, config *cfg.Cfg, sdData *sd.
 		port:      port,
 		cfg:       config,
 		sdData:    sdData,
+		sessions:  make(map[string]time.Time, 10),
 	}
 }
 
@@ -668,6 +677,20 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 		done <- err
 	}()
 
+	go func() {
+		for {
+			time.Sleep(WS_REMOVE_SESSION_INTERVAL * time.Second)
+			now := time.Now()
+			ws.sessionsLock.Lock()
+			for id, ts := range ws.sessions {
+				if ts.Add(WS_SESSION_MAX_AGE * time.Second).Before(now) {
+					delete(ws.sessions, id)
+				}
+			}
+			ws.sessionsLock.Unlock()
+		}
+	}()
+
 	return ws.server
 }
 
@@ -680,11 +703,53 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 		}
 		if ws.cfg.GetBoolValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_USE_PASSWORD, cfg.DEF_USE_PASSWORD) &&
 			ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "") != "" {
-			_, password, ok := r.BasicAuth()
-			realm := fmt.Sprintf("Basic realm=\"%s\"", ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_NAME, cfg.DEF_NAME))
-			if !ok || !helper.CheckPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
-				w.Header().Set("WWW-Authenticate", realm)
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			now := time.Now()
+
+			doPasswordCheck := func() {
+				_, password, ok := r.BasicAuth()
+				realm := fmt.Sprintf("Basic realm=\"%s\"", ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_NAME, cfg.DEF_NAME))
+				if !ok || !helper.CheckPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
+					w.Header().Set("WWW-Authenticate", realm)
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				sessionId, err := helper.NewSessionID()
+				if err != nil {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				ws.sessionsLock.Lock()
+				ws.sessions[sessionId] = now
+				ws.sessionsLock.Unlock()
+
+				http.SetCookie(w, &http.Cookie{
+					Name:     "session_id",
+					Value:    sessionId,
+					Path:     "/",
+					HttpOnly: true,
+					SameSite: http.SameSiteStrictMode,
+					MaxAge:   WS_SESSION_MAX_AGE,
+				})
+				next.ServeHTTP(w, r)
+			}
+
+			cookie, err := r.Cookie("session_id")
+			if err != nil {
+				doPasswordCheck()
+				return
+			}
+			ws.sessionsLock.RLock()
+			ts, ok := ws.sessions[cookie.Value]
+			ws.sessionsLock.RUnlock()
+			if !ok {
+				doPasswordCheck()
+				return
+			}
+			if ts.Add(WS_SESSION_MAX_AGE * time.Second).Before(now) {
+				ws.sessionsLock.Lock()
+				delete(ws.sessions, cookie.Value)
+				ws.sessionsLock.Unlock()
+				doPasswordCheck()
 				return
 			}
 		}
