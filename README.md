@@ -28,8 +28,8 @@ License: MIT
 
 ![alt text](/screenshots/sensorbox.jpg "Sensorbox")
 ![alt text](/screenshots/raspberry.jpg "Raspberry Pi")
-![alt text](/screenshots/web_main.jpg "Website main page")
-![alt text](/screenshots/web_config.jpg "Website config")
+![alt text](/screenshots/main.jpg "Website main page")
+![alt text](/screenshots/config.jpg "Website config")
 
 ## Links
 
