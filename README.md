@@ -1,6 +1,6 @@
 # Weather station
 
-![alt text](/webserver/web/favicon.svg "Logo")
+![alt text](/webserver/web/favicon.png "Logo")
 
 Weather station is my private project for monitoring temperature, humidity, air pressure and ambient light.
 I originally developed the system using an ESP32. But ESP IDF changes frequently, often breaking compatibility with existing code so I decided to rewrite the projekt based on Raspberry Pi and [Go](https://go.dev/).
