@@ -40,19 +40,6 @@ import (
 const (
 	WEATHER_STATION_VERSION = "2.7"
 
-	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
-
-	DEF_TEMPERATURE_FC  = 0.2   // nach ~ 6 Werten 75%,
-	DEF_TEMPERATURE_FC2 = 0.002 // nach ~ 693 Werten 75%,
-	DEF_HUMIDITY_FC     = 0.1   // nach 13 Werten 75%
-	DEF_HUMIDITY_FC2    = 0.002
-	DEF_DEWPOINT_FC     = 0.1
-	DEF_DEWPOINT_FC2    = 0.002
-	DEF_PRESSURE_FC     = 0.1
-	DEF_PRESSURE_FC2    = 0.002
-	DEF_LUX_FC          = 0.3 // nach 4 Werten 75%
-	DEF_LUX_FC2         = 0.004
-
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"
 	KEY_FILTER_CONST_T2  = "filter_constant_t2"
@@ -97,6 +84,17 @@ const (
 	KEY_DATA_FOLDER   = "Folder"
 	KEY_DATA_INTERVAL = "Interval"
 
+	DEF_CFG_FILE                    = "/etc/weatherd/weatherd.cfg"
+	DEF_TEMPERATURE_FC              = 0.2   // nach ~ 6 Werten 75%,
+	DEF_TEMPERATURE_FC2             = 0.002 // nach ~ 693 Werten 75%,
+	DEF_HUMIDITY_FC                 = 0.1   // nach 13 Werten 75%
+	DEF_HUMIDITY_FC2                = 0.002
+	DEF_DEWPOINT_FC                 = 0.1
+	DEF_DEWPOINT_FC2                = 0.002
+	DEF_PRESSURE_FC                 = 0.1
+	DEF_PRESSURE_FC2                = 0.002
+	DEF_LUX_FC                      = 0.3 // nach 4 Werten 75%
+	DEF_LUX_FC2                     = 0.004
 	DEF_HEIGHT                      = 522
 	DEF_NAME                        = "Weather Station"
 	DEF_USE_PASSWORD                = true
