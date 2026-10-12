@@ -1,0 +1,5 @@
+Orange = SDA (I2C-Daten)
+Schwarz = GND (Masse — liegt als Abschirmung zwischen den Signalen)
+Braun = SCL (I2C-Takt)
+Rot = VCC (3,3 V) (Stromversorgung)
+
