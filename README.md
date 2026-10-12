@@ -10,7 +10,7 @@ As sensors I use:
 - SHT45 for temperature and humidity  
 - BMP581 for pressure  
 - VEML7700 for ambient light
-
+  
 The sensors are installed in a sensor enclosure connected to the Raspberry Pi via a 6 m cable using I²C communication. I have added a LTC4311 to improve signal quality - but tests have shown that it also
 works without it.
 
@@ -20,6 +20,9 @@ For pressure we also calculate a one-hour and three-hour trends.
 
 Data are written to SD card in csv format.
 Actual and historical data are displayed on a website.
+
+We use the 7.2 kernel from the [Raspberry Pi Linux project](https://github.com/raspberrypi/linux).
+We have removed some tracing, hooking, and debugging features to reduce the kernel size and improve performance.
 
 Author: Reiner Pröls  
 License: MIT  
