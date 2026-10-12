@@ -1,7 +1,7 @@
 
 function doLoad()
 {
-	setInterval(function(){doPeriodic()}, 6000);
+	setInterval(function(){doPeriodic()}, 120*1000);
 }
 
 function doPeriodic()
