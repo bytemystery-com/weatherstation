@@ -34,7 +34,6 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -355,8 +354,7 @@ func (ws *WebServer) fwUpdate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Firmware update successful"))
 	go func() {
-		time.Sleep(1 * time.Second)
-		exec.Command("systemctl", "poweroff").Run()
+		raspi.Restart(ws.cfg)
 	}()
 }
 

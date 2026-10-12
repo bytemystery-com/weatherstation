@@ -332,7 +332,7 @@
 				<form class="status" id="config" enctype="multipart/form-data" action="firmwareupdate" method="POST" onsubmit="return doUpdate()">
 					<div class="block_update">
 						<button class="submitbutton" type="button" form="" onclick="document.getElementById('update_file_upload').click()">Update...</button>
-						<input style="display:none" type="file" accept=".bin" form="config" name="firmwarefile" id="update_file_upload" onchange="doUpdate()">
+						<input style="display:none" type="file" accept="" form="config" name="firmwarefile" id="update_file_upload" onchange="doUpdate()">
 						<button class="submitbutton" type="button" form="" onclick="doRestart()">Restart...</button>
 						<button class="submitbutton" type="button" form=""  onclick="doCfg()">Config...</button>
 					</div>
