@@ -116,6 +116,12 @@ function doRestart()
 	restart_request.open("GET","restart", true);
 	noCacheInRequest(restart_request);
 	restart_request.responseType = "text";
+	request.onload = function()
+	{
+		document.body.style.cursor = "default";
+		window.location.href = "restart.html"
+	}
+	document.body.style.cursor = "wait";
 	restart_request.send();
 }
 
