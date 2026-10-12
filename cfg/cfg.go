@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.4"
+	WEATHER_STATION_VERSION = "2.5"
 
 	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
 
@@ -49,7 +49,7 @@ const (
 	DEF_DEWPOINT_FC     = 0.1
 	DEF_DEWPOINT_FC2    = 0.002
 	DEF_PRESSURE_FC     = 0.1
-	DEF_PRESSURE_FC2    = 0.005
+	DEF_PRESSURE_FC2    = 0.002
 	DEF_LUX_FC          = 0.3 // nach 4 Werten 75%
 	DEF_LUX_FC2         = 0.004
 
