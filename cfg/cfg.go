@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.6"
+	WEATHER_STATION_VERSION = "2.7"
 
 	DEF_CFG_FILE = "/etc/weatherd/weatherd.cfg"
 
@@ -87,6 +87,7 @@ const (
 	KEY_HARDWARE_I2C_DEV_NUMBER              = "I2CDevNumber"
 	KEY_HARDWARE_SET_PIN_ON_START            = "SetPinOnStart"
 	KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER = "PinOnStartDeviceNumber"
+	KEY_HARDWARE_SET_PIN_ON_START_HIGH       = "SetPinOnStartToHigh"
 
 	SECTION_RUN    = "run"
 	KEY_RUN_REBOOT = "Reboots"
@@ -112,7 +113,8 @@ const (
 	DEF_REBOOT_WAIT                 = 60 // sec
 	DEF_I2C_DEV_NUMBER              = 1
 	DEF_SET_PIN_ON_START            = -1 // off
-	DEF_PIN_ON_START_GPIODEV_NUMBER = 15 // off
+	DEF_PIN_ON_START_GPIODEV_NUMBER = 15 // gpiodev15
+	DEF_SET_PIN_ON_START_HIGH       = true
 )
 
 type Cfg struct {
@@ -131,18 +133,18 @@ func NewCfg(file string, doReload func()) (*Cfg, error) {
 		cfgFile: file,
 		ini:     ini.Empty(),
 	}
+	c.SetDeaultCfg()
 	if !ok {
 		log.Printf("CFG: New created in %s", file)
-		c.SetDeaultCfg()
 		c.Save()
 	} else {
-		cfg, err := ini.Load(file)
+		log.Printf("CFG: Loaded from %s", file)
+		err := c.ini.Append(file)
 		if err != nil {
-			cfg = ini.Empty()
+			return nil, err
 		}
-		c.ini = cfg
+		c.Save()
 	}
-	log.Printf("CFG: Loaded from %s", file)
 	return &c, nil
 }
 
@@ -267,6 +269,7 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_I2C_DEV_NUMBER, DEF_I2C_DEV_NUMBER, "I2C bus number")
 	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_SET_PIN_ON_START, DEF_SET_PIN_ON_START, "Set pin to high on start (-1=disabled)")
 	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, DEF_PIN_ON_START_GPIODEV_NUMBER, "Gpio device used for set pin to high on start")
+	c.SetBoolValue(SECTION_HARDWARE, KEY_HARDWARE_SET_PIN_ON_START_HIGH, DEF_SET_PIN_ON_START_HIGH, "If true set pin on start to high, else to low if false")
 
 	c.SetStringValue(SECTION_DATA, KEY_DATA_FOLDER, DEF_DATA_FOLDER, "Folder for data (csv files)")
 	c.SetIntValue(SECTION_DATA, KEY_DATA_INTERVAL, DEF_DATA_INTERVAL, "Interval for data write [sec]")

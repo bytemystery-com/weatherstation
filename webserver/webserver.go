@@ -475,10 +475,6 @@ func (ws *WebServer) getData(w http.ResponseWriter, r *http.Request) {
 func (ws *WebServer) query(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	q := r.URL.Query().Get("q")
-	if q == "" {
-		http.Error(w, "query parameter is missing", http.StatusBadRequest)
-		return
-	}
 	data := ws.callBacks.GetData()
 	response := ""
 	switch q {
@@ -593,7 +589,7 @@ func (ws *WebServer) query(w http.ResponseWriter, r *http.Request) {
 		response = ""
 	}
 	if response == "" {
-		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
+		http.Error(w, "Invalid or missing query parameter", http.StatusBadRequest)
 		response = "\nMeasure data:\n" +
 			"t		Temperature from humidity sensor (short) in °C\n" +
 			"t2		Temperature from humidity sensor (long) in °C\n" +

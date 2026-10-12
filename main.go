@@ -165,6 +165,8 @@ func main() {
 	if err != nil {
 		return
 	}
+
+	// Set Pin to high / low - could be used to trigger LED or switch on LTC4311 (I2C terminator)
 	pin := Data.Config.GetIntValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, cfg.DEF_SET_PIN_ON_START)
 	if pin > 0 {
 		pinLine, err := gpio.NewGpioInPin(uint(Data.Config.GetIntValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, cfg.DEF_PIN_ON_START_GPIODEV_NUMBER)),
@@ -174,8 +176,10 @@ func main() {
 		}
 		Data.PinOnStart = pinLine
 		time.Sleep(250 * time.Millisecond)
-		Data.PinOnStart.Set(true)
-		time.Sleep(250 * time.Millisecond)
+		if Data.Config.GetBoolValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_SET_PIN_ON_START_HIGH, cfg.DEF_SET_PIN_ON_START_HIGH) {
+			Data.PinOnStart.Set(true)
+			time.Sleep(250 * time.Millisecond)
+		}
 	}
 
 	bus, _ := i2c.NewI2c(Data.Config.GetIntValue(cfg.SECTION_HARDWARE, cfg.KEY_HARDWARE_I2C_DEV_NUMBER, cfg.DEF_I2C_DEV_NUMBER))
