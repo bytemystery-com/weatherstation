@@ -47,8 +47,10 @@ import (
 )
 
 const (
-	WS_SESSION_MAX_AGE         = 14400 // sec
-	WS_REMOVE_SESSION_INTERVAL = 300   // sec
+	// WS_SESSION_MAX_AGE         = 14400 // sec
+	WS_SESSION_MAX_AGE         = 120 // sec
+	WS_REMOVE_SESSION_INTERVAL = 30  // sec
+	WS_SESSION_COOKIE_NAME     = "session-id"
 )
 
 type HasErrors interface {
@@ -375,11 +377,17 @@ func (ws *WebServer) restart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ws *WebServer) setCfg(w http.ResponseWriter, r *http.Request) {
+	oldPass := ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")
 	err := ws.cfg.SetCfg(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else {
+		if oldPass != ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "") {
+			ws.sessionsLock.Lock()
+			clear(ws.sessions)
+			ws.sessionsLock.Unlock()
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}
@@ -683,9 +691,12 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 			time.Sleep(WS_REMOVE_SESSION_INTERVAL * time.Second)
 			now := time.Now()
 			ws.sessionsLock.Lock()
+			// removind during iteration ?
+			// https://go.dev/doc/effective_go#for
 			for id, ts := range ws.sessions {
 				if ts.Add(WS_SESSION_MAX_AGE * time.Second).Before(now) {
 					delete(ws.sessions, id)
+					log.Printf("Expired cookie %s removed", id)
 				}
 			}
 			ws.sessionsLock.Unlock()
@@ -698,7 +709,7 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 func (ws *WebServer) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/getdata", "/update", "/query":
+		case "/query":
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -712,6 +723,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				if !ok || !helper.CheckPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
 					w.Header().Set("WWW-Authenticate", realm)
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					log.Printf("WS: Need password %v", r.URL)
 					return
 				}
 				sessionId, err := helper.NewSessionID()
@@ -724,20 +736,20 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				ws.sessionsLock.Unlock()
 
 				http.SetCookie(w, &http.Cookie{
-					Name:     "session_id",
+					Name:     WS_SESSION_COOKIE_NAME,
 					Value:    sessionId,
 					Path:     "/",
 					HttpOnly: true,
 					SameSite: http.SameSiteStrictMode,
 					MaxAge:   WS_SESSION_MAX_AGE,
 				})
-				log.Printf("WS: Create cookie %s", sessionId)
+				log.Printf("WS: Create cookie %s %v", sessionId, r.URL)
 				next.ServeHTTP(w, r)
 			}
 
-			cookie, err := r.Cookie("session_id")
+			cookie, err := r.Cookie(WS_SESSION_COOKIE_NAME)
 			if err != nil {
-				log.Printf("WS: No cookie %v", r.URL)
+				log.Printf("WS: No cookie send %v", r.URL)
 				doPasswordCheck()
 				return
 			}
@@ -745,6 +757,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 			ts, ok := ws.sessions[cookie.Value]
 			ws.sessionsLock.RUnlock()
 			if !ok {
+				log.Printf("WS: cookie (%v) %v not found", cookie.Value, r.URL)
 				doPasswordCheck()
 				return
 			}
@@ -752,6 +765,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				ws.sessionsLock.Lock()
 				delete(ws.sessions, cookie.Value)
 				ws.sessionsLock.Unlock()
+				log.Printf("WS: cookie (%v) %v expired", cookie.Value, r.URL)
 				doPasswordCheck()
 				return
 			}

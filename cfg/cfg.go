@@ -443,11 +443,13 @@ func (c *Cfg) SetCfg(r *http.Request) error {
 	}
 	val = r.FormValue("pass")
 	if val != "" {
-		val, err := helper.HashPassword(val)
-		if err == nil {
-			c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_PASSWORD, val, "")
-		} else {
-			allErrors = errors.Join(allErrors, err)
+		if !helper.CheckPassword(val, c.GetStringValue(SECTION_GENERAL, KEY_GENERAL_PASSWORD, "")) {
+			val, err := helper.HashPassword(val)
+			if err == nil {
+				c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_PASSWORD, val, "")
+			} else {
+				allErrors = errors.Join(allErrors, err)
+			}
 		}
 	}
 	err := c.Save()

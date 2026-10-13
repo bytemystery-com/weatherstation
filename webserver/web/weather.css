@@ -75,7 +75,7 @@ legend
 {
 	float: left;
 	width: 21em;
-	margin-left: 20px;
+	margin-left: 0px;
 	margin-top: 10px;
 }
 
@@ -86,7 +86,8 @@ legend
 
 .box_date
 {
-	width: 20.5em;
+	width: 370.66px;
+	box-sizing: border-box;
 }
 
 .block_update
