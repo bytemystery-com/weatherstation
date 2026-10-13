@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -730,11 +731,13 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 					SameSite: http.SameSiteStrictMode,
 					MaxAge:   WS_SESSION_MAX_AGE,
 				})
+				log.Printf("WS: Create cookie %s", sessionId)
 				next.ServeHTTP(w, r)
 			}
 
 			cookie, err := r.Cookie("session_id")
 			if err != nil {
+				log.Printf("WS: No cookie %v", r.URL)
 				doPasswordCheck()
 				return
 			}
