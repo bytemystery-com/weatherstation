@@ -727,7 +727,7 @@ func (ws *WebServer) StartWebServer(done chan<- error) {
 					log.Print("WEB: Use internal key / cert data")
 					done <- ws.httpsServer.ListenAndServeTLS("", "")
 				} else {
-					log.Print("WEB: Internal key / cert data are invalid %v", err)
+					log.Printf("WEB: Internal key / cert data are invalid %v", err)
 				}
 			}
 		}()
