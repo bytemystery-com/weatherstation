@@ -27,6 +27,7 @@
 package webserver
 
 import (
+	"crypto/tls"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -46,11 +47,17 @@ import (
 	"weatherd/sd"
 )
 
+//go:embed ssl/weatherd.crt
+var internalSslCert []byte
+
+//go:embed ssl/weatherd.key
+var internalSslKey []byte
+
 const (
-	// WS_SESSION_MAX_AGE         = 14400 // sec
-	WS_SESSION_MAX_AGE         = 120 // sec
-	WS_REMOVE_SESSION_INTERVAL = 30  // sec
-	WS_SESSION_COOKIE_NAME     = "session-id"
+	WS_SESSION_MAX_AGE         = 14400 // sec
+	WS_REMOVE_SESSION_INTERVAL = 900   // sec
+	WS_SESSION_COOKIE_NAME     = "session_id"
+	WS_SESSION_COOKIE_NAME_SSL = "session_id-ssl"
 )
 
 type HasErrors interface {
@@ -112,18 +119,17 @@ var webFiles embed.FS
 
 type WebServer struct {
 	callBacks    WebCallBacks
-	port         int
-	server       *http.Server
+	httpServer   *http.Server
+	httpsServer  *http.Server
 	cfg          *cfg.Cfg
 	sdData       *sd.SdData
 	sessions     map[string]time.Time
 	sessionsLock sync.RWMutex
 }
 
-func NewWebServer(port int, callBacks WebCallBacks, config *cfg.Cfg, sdData *sd.SdData) *WebServer {
+func NewWebServer(callBacks WebCallBacks, config *cfg.Cfg, sdData *sd.SdData) *WebServer {
 	return &WebServer{
 		callBacks: callBacks,
-		port:      port,
 		cfg:       config,
 		sdData:    sdData,
 		sessions:  make(map[string]time.Time, 10),
@@ -647,12 +653,12 @@ func (ws *WebServer) query(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(response))
 }
 
-func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
+func (ws *WebServer) StartWebServer(done chan<- error) {
 	mux := http.NewServeMux()
 	webFS, err := fs.Sub(webFiles, "web")
 	if err != nil {
 		done <- err
-		return nil
+		return
 	}
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -676,15 +682,56 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 	handler := ws.auth(mux)
 	// handler = ws.log(handler)
 
-	ws.server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", ws.port),
-		Handler: handler,
+	var httpPort int
+	var httpsPort int
+	if helper.IsRoot() {
+		httpPort = ws.cfg.GetIntValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_HTTP_PORT, cfg.DEF_WEBSERVER_HTTP_PORT)
+		httpsPort = ws.cfg.GetIntValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_HTTPS_PORT, cfg.DEF_WEBSERVER_HTTPS_PORT)
+	} else {
+		httpPort = ws.cfg.GetIntValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_HTTP_PORT_NOROOT, cfg.DEF_WEBSERVER_HTTP_PORT_NOROOT)
+		httpsPort = ws.cfg.GetIntValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_HTTPS_PORT_NOROOT, cfg.DEF_WEBSERVER_HTTP_PORT_NOROOT)
 	}
 
-	go func() {
-		err := ws.server.ListenAndServe()
-		done <- err
-	}()
+	if ws.cfg.GetBoolValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_HTTP_ENABLED, cfg.DEF_WEBSERVER_ENABLED_HTTP) {
+
+		ws.httpServer = &http.Server{
+			Addr:    fmt.Sprintf(":%d", httpPort),
+			Handler: handler,
+		}
+
+		go func() {
+			err := ws.httpServer.ListenAndServe()
+			done <- err
+		}()
+	}
+
+	if ws.cfg.GetBoolValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_HTTPS_ENABLED, cfg.DEF_WEBSERVER_ENABLED_HTTPS) {
+		ws.httpsServer = &http.Server{
+			Addr:    fmt.Sprintf(":%d", httpsPort),
+			Handler: handler,
+		}
+
+		go func() {
+			certFile := ws.cfg.GetStringValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_CERT_FILE, cfg.DEF_WEBSERVER_CERT_FILE)
+			keyFile := ws.cfg.GetStringValue(cfg.SECTION_WEBSERVER, cfg.KEY_WEBSERVER_KEY_FILE, cfg.DEF_WEBSERVER_KEY_FILE)
+			_, err := tls.LoadX509KeyPair(certFile, keyFile)
+			if err == nil {
+				log.Print("WEB: Use external key / cert files")
+				done <- ws.httpsServer.ListenAndServeTLS(certFile, keyFile)
+			} else {
+				cert, err := tls.X509KeyPair(internalSslCert, internalSslKey)
+				if err == nil {
+					ws.httpsServer.TLSConfig = &tls.Config{
+						Certificates: []tls.Certificate{cert},
+					}
+					log.Print("WEB: Use internal key / cert data")
+					done <- ws.httpsServer.ListenAndServeTLS("", "")
+				} else {
+					log.Print("WEB: Internal key / cert data are invalid %v", err)
+				}
+			}
+		}()
+	}
 
 	go func() {
 		for {
@@ -702,8 +749,6 @@ func (ws *WebServer) StartWebServer(done chan<- error) *http.Server {
 			ws.sessionsLock.Unlock()
 		}
 	}()
-
-	return ws.server
 }
 
 func (ws *WebServer) auth(next http.Handler) http.Handler {
@@ -716,6 +761,11 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 		if ws.cfg.GetBoolValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_USE_PASSWORD, cfg.DEF_USE_PASSWORD) &&
 			ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "") != "" {
 			now := time.Now()
+
+			cookieName := WS_SESSION_COOKIE_NAME
+			if r.TLS != nil {
+				cookieName = WS_SESSION_COOKIE_NAME_SSL
+			}
 
 			doPasswordCheck := func() {
 				_, password, ok := r.BasicAuth()
@@ -736,10 +786,11 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				ws.sessionsLock.Unlock()
 
 				http.SetCookie(w, &http.Cookie{
-					Name:     WS_SESSION_COOKIE_NAME,
+					Name:     cookieName,
 					Value:    sessionId,
 					Path:     "/",
 					HttpOnly: true,
+					Secure:   r.TLS != nil,
 					SameSite: http.SameSiteStrictMode,
 					MaxAge:   WS_SESSION_MAX_AGE,
 				})
@@ -747,7 +798,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 			}
 
-			cookie, err := r.Cookie(WS_SESSION_COOKIE_NAME)
+			cookie, err := r.Cookie(cookieName)
 			if err != nil {
 				log.Printf("WS: No cookie send %v", r.URL)
 				doPasswordCheck()

@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.8"
+	WEATHER_STATION_VERSION = "2.9"
 
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"
@@ -63,9 +63,15 @@ const (
 	KEY_GENERAL_HEATER_MAINT_INTERVAL   = "HeaterMaintInterval"
 	KEY_GENERAL_PRESSURE_TREND_INTERVAL = "PressureTrendInterval"
 
-	SECTION_NETWORK             = "network"
-	KEY_NETWORK_WEB_PORT        = "WebServerPort"
-	KEY_NETWORK_WEB_PORT_NOROOT = "WebServerPortNonRoot"
+	SECTION_WEBSERVER               = "webserver"
+	KEY_WEBSERVER_HTTP_PORT         = "HTTPPort"
+	KEY_WEBSERVER_HTTP_PORT_NOROOT  = "HTTPPortNonRoot"
+	KEY_WEBSERVER_HTTPS_PORT        = "HTTPSPort"
+	KEY_WEBSERVER_HTTPS_PORT_NOROOT = "HTTPSPortNonRoot"
+	KEY_WEBSERVER_HTTP_ENABLED      = "HttpEnabled"
+	KEY_WEBSERVER_HTTPS_ENABLED     = "HttpsEnabled"
+	KEY_WEBSERVER_KEY_FILE          = "SSLKeyFile"
+	KEY_WEBSERVER_CERT_FILE         = "SSLCertFile"
 
 	SECTION_SYSTEM               = "system"
 	KEY_SYSTEM_RESTART_POFF_TIME = "PoweroffTime"
@@ -97,7 +103,7 @@ const (
 	DEF_LUX_FC2                     = 0.004
 	DEF_HEIGHT                      = 522
 	DEF_NAME                        = "Weather Station"
-	DEF_USE_PASSWORD                = true
+	DEF_USE_PASSWORD                = false
 	DEF_UPDATE_INTERVAL             = 1000 // msec
 	DEF_RESTART_POFF_TIME           = 60   // sec
 	DEF_DATA_FOLDER                 = "/data"
@@ -106,8 +112,14 @@ const (
 	DEF_HEATER_INTERVAL             = 60   // min
 	DEF_HEATER_MAINT_INTERVAL       = 168  // Hours
 	DEF_PRESSURE_TREND_INTERVAL     = 60   // sec
-	DEF_WEBSERVER_PORT              = 80
-	DEF_WEBSERVER_PORT_NOROOT       = 8080
+	DEF_WEBSERVER_HTTP_PORT         = 80
+	DEF_WEBSERVER_HTTP_PORT_NOROOT  = 8080
+	DEF_WEBSERVER_HTTPS_PORT        = 443
+	DEF_WEBSERVER_HTTPS_PORT_NOROOT = 4430
+	DEF_WEBSERVER_ENABLED_HTTP      = true
+	DEF_WEBSERVER_ENABLED_HTTPS     = true
+	DEF_WEBSERVER_KEY_FILE          = "/etc/weatherd/certs/weatherd.key"
+	DEF_WEBSERVER_CERT_FILE         = "/etc/weatherd/certs/weatherd.crt"
 	DEF_REBOOT_WAIT                 = 60 // sec
 	DEF_I2C_DEV_NUMBER              = 1
 	DEF_SET_PIN_ON_START            = -1 // off
@@ -259,8 +271,14 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEATER_MAINT_INTERVAL, DEF_HEATER_MAINT_INTERVAL, "Heater maintenance interval [hour]")
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_PRESSURE_TREND_INTERVAL, DEF_PRESSURE_TREND_INTERVAL, "Interval for pressure trend data [sec]")
 
-	c.SetIntValue(SECTION_NETWORK, KEY_NETWORK_WEB_PORT, DEF_WEBSERVER_PORT, "Port for webserver if running as root")
-	c.SetIntValue(SECTION_NETWORK, KEY_NETWORK_WEB_PORT_NOROOT, DEF_WEBSERVER_PORT_NOROOT, "Port for webserver if not running as root")
+	c.SetIntValue(SECTION_WEBSERVER, KEY_WEBSERVER_HTTP_PORT, DEF_WEBSERVER_HTTP_PORT, "Port for webserver if running as root")
+	c.SetIntValue(SECTION_WEBSERVER, KEY_WEBSERVER_HTTP_PORT_NOROOT, DEF_WEBSERVER_HTTP_PORT_NOROOT, "Port for webserver if not running as root")
+	c.SetIntValue(SECTION_WEBSERVER, KEY_WEBSERVER_HTTPS_PORT, DEF_WEBSERVER_HTTPS_PORT, "Port for webserver for using SSL if running as root")
+	c.SetIntValue(SECTION_WEBSERVER, KEY_WEBSERVER_HTTPS_PORT_NOROOT, DEF_WEBSERVER_HTTPS_PORT_NOROOT, "Port for webserver for using SSL and if not running as root")
+	c.SetBoolValue(SECTION_WEBSERVER, KEY_WEBSERVER_HTTP_ENABLED, DEF_WEBSERVER_ENABLED_HTTP, "Enable HTTP")
+	c.SetBoolValue(SECTION_WEBSERVER, KEY_WEBSERVER_HTTPS_ENABLED, DEF_WEBSERVER_ENABLED_HTTPS, "Enable HTTPS")
+	c.SetStringValue(SECTION_WEBSERVER, KEY_WEBSERVER_KEY_FILE, DEF_WEBSERVER_KEY_FILE, "The SSL key file")
+	c.SetStringValue(SECTION_WEBSERVER, KEY_WEBSERVER_CERT_FILE, DEF_WEBSERVER_CERT_FILE, "The SSL cert file")
 
 	c.SetIntValue(SECTION_SYSTEM, KEY_SYSTEM_RESTART_POFF_TIME, DEF_RESTART_POFF_TIME, "Restart after restart command [sec]")
 

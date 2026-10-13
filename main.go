@@ -265,22 +265,16 @@ func main() {
 		return
 	}
 
-	var port int
-	if helper.IsRoot() {
-		port = Data.Config.GetIntValue(cfg.SECTION_NETWORK, cfg.KEY_NETWORK_WEB_PORT, cfg.DEF_WEBSERVER_PORT)
-	} else {
-		port = Data.Config.GetIntValue(cfg.SECTION_NETWORK, cfg.KEY_NETWORK_WEB_PORT_NOROOT, cfg.DEF_WEBSERVER_PORT_NOROOT)
-	}
-
-	Data.WebServer = webserver.NewWebServer(port, callBacks, Data.Config, Data.SdData)
-	webError := make(chan error, 1)
+	Data.WebServer = webserver.NewWebServer(callBacks, Data.Config, Data.SdData)
+	webError := make(chan error, 2)
 	Data.WebServer.StartWebServer(webError)
 
 	go doMeasure()
 	go doSd()
 	go doPressureTrend()
 
-	<-webError
+	x := <-webError
+	fmt.Printf("WebError %v", x)
 
 	fmt.Println("Exit")
 }

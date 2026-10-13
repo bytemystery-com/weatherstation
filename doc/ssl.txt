@@ -1,0 +1,70 @@
+without CA
+
+sudo mkdir -p /etc/weatherd/certs
+cd /etc/weatherd/certs
+
+openssl req -x509 -newkey rsa:2048 -keyout weatherd.key -out weatherd.crt -days 10000 -nodes \
+-subj "/C=DE/ST=Bayern/L=Munich/CN=weatherd/emailAddress=bytemystery@gmail.com" -addext "subjectAltName=email:bytemystery@gmail.com"
+
+sudo openssl x509 -in /etc/weatherd/certs/weatherd.crt -noout -subject -dates
+
+-----------------------------------------
+
+with CA
+
+mkdir -p ~/weatherd-ca
+cd ~/weatherd-ca
+chmod 700 ~/weatherd-ca
+
+openssl genrsa -out weatherd-ca.key 4096
+chmod 600 weatherd-ca.key
+
+openssl req -x509 -new -sha256 -key weatherd-ca.key -out weatherd-ca.crt -days 3650 \
+  -subj "/CN=weatherd eigene CA" \
+  -addext "basicConstraints=critical,CA:TRUE" \
+  -addext "keyUsage=critical,keyCertSign,cRLSign"
+
+
+  -----
+mkdir -p ~/weatherd-cert
+cd ~/weatherd-cert
+chmod 700 ~/weatherd-cert
+
+openssl genrsa -out weatherd.key 3072
+chmod 600 weatherd.key
+openssl req -new \
+  -key weatherd.key \
+  -out ../weatherd-ca/weatherd.csr \
+  -subj "/CN=weather-station"
+
+cd ~/weatherd-ca
+cat > weatherd-ext.cnf <<'EOF'
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = weather-station
+DNS.2 = weather-station.local
+IP.1 = 192.168.0.130
+IP.2 = 192.168.9.183
+EOF
+
+vim weatherd-ext.cnf
+
+openssl x509 -req \
+  -in weatherd.csr \
+  -CA weatherd-ca.crt \
+  -CAkey weatherd-ca.key \
+  -CAserial weatherd-ca.srl \
+  -out weatherd_ssl.crt \
+  -days 365 \
+  -sha256 \
+  -extfile weatherd-ext.cnf
+
+  openssl verify -CAfile weatherd-ca.crt weatherd.crt
+  openssl x509 -in weatherd.crt -noout -ext subjectAltName
+
+
+
