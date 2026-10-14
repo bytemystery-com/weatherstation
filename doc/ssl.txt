@@ -32,11 +32,11 @@ mkdir -p ~/weatherd-ca
 cd ~/weatherd-ca
 chmod 700 ~/weatherd-ca
 
-openssl genrsa -out weatherd-ca.key 4096
+openssl genrsa -aes256 -out weatherd-ca.key 4096
 chmod 600 weatherd-ca.key
 
 openssl req -x509 -new -sha256 -key weatherd-ca.key -out weatherd-ca.crt -days 3650 \
-  -subj "/CN=weatherd eigene CA" \
+  -subj "/CN=repro CA" \
   -addext "basicConstraints=critical,CA:TRUE" \
   -addext "keyUsage=critical,keyCertSign,cRLSign"
 
@@ -73,14 +73,14 @@ openssl x509 -req \
   -in weatherd.csr \
   -CA weatherd-ca.crt \
   -CAkey weatherd-ca.key \
-  -CAserial weatherd-ca.srl \
+  -CAserial \
   -out weatherd_ssl.crt \
   -days 365 \
   -sha256 \
   -extfile weatherd-ext.cnf
 
   openssl verify -CAfile weatherd-ca.crt weatherd.crt
-  openssl x509 -in weatherd.crt -noout -ext subjectAltName
+  openssl x509 -in weatherd.crt -noout -text
 
 
 
