@@ -6,7 +6,23 @@ cd /etc/weatherd/certs
 openssl req -x509 -newkey rsa:2048 -keyout weatherd.key -out weatherd.crt -days 10000 -nodes \
 -subj "/C=DE/ST=Bayern/L=Munich/CN=weatherd/emailAddress=bytemystery@gmail.com" -addext "subjectAltName=email:bytemystery@gmail.com"
 
-sudo openssl x509 -in /etc/weatherd/certs/weatherd.crt -noout -subject -dates
+oder
+
+openssl req -x509 -newkey rsa:2048 \
+  -keyout weatherd.key -out weatherd.crt \
+  -days 10000 -nodes \
+  -subj "/C=DE/ST=Bayern/L=Munich/CN=weatherd/emailAddress=bytemystery@gmail.com" \
+  -addext "subjectAltName=IP:192.168.0.183,IP:192.168.0.178,DNS:weatherd,DNS:weather-station,DNS:weather-station.local,email:bytemystery@gmail.com"
+
+openssl req -x509 -newkey rsa:2048 \
+  -keyout weatherd.key -out weatherd.crt \
+  -days 10000 -nodes \
+  -subj "/C=DE/ST=Bayern/L=Munich/CN=weatherd/emailAddress=bytemystery@gmail.com" \
+  -addext "subjectAltName=DNS:weather-station,DNS:weather-station.local,email:bytemystery@gmail.com"
+
+Anschauen:
+openssl x509 -in weatherd.crt -text -noout
+openssl pkey -in weatherd.key -text -noout
 
 -----------------------------------------
 
