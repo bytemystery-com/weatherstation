@@ -82,5 +82,9 @@ openssl x509 -req \
   openssl verify -CAfile weatherd-ca.crt weatherd.crt
   openssl x509 -in weatherd.crt -noout -text
 
+---------------------------------
+NO-IP
+openssl req -new -nodes -keyout myserver.key -out server.csr
+
 
 

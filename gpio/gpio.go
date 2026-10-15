@@ -34,6 +34,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// pinctrl
+// 0-0 after start with pull up
+// 9-27 after start with pull down
+
 type GpioPull uint8
 
 const (
