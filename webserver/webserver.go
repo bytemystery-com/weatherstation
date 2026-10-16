@@ -743,7 +743,7 @@ func (ws *WebServer) StartWebServer(done chan<- error) {
 			for id, ts := range ws.sessions {
 				if ts.Add(WS_SESSION_MAX_AGE * time.Second).Before(now) {
 					delete(ws.sessions, id)
-					log.Printf("Expired cookie %s removed", id)
+					// log.Printf("Expired cookie %s removed", id)
 				}
 			}
 			ws.sessionsLock.Unlock()
@@ -773,7 +773,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				if !ok || !helper.CheckPassword(password, ws.cfg.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PASSWORD, "")) {
 					w.Header().Set("WWW-Authenticate", realm)
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
-					log.Printf("WS: Need password %v", r.URL)
+					// log.Printf("WS: Need password %v", r.URL)
 					return
 				}
 				sessionId, err := helper.NewSessionID()
@@ -794,13 +794,13 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 					SameSite: http.SameSiteStrictMode,
 					MaxAge:   WS_SESSION_MAX_AGE,
 				})
-				log.Printf("WS: Create cookie %s %v", sessionId, r.URL)
+				// log.Printf("WS: Create cookie %s %v", sessionId, r.URL)
 				next.ServeHTTP(w, r)
 			}
 
 			cookie, err := r.Cookie(cookieName)
 			if err != nil {
-				log.Printf("WS: No cookie send %v", r.URL)
+				// log.Printf("WS: No cookie send %v", r.URL)
 				doPasswordCheck()
 				return
 			}
@@ -808,7 +808,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 			ts, ok := ws.sessions[cookie.Value]
 			ws.sessionsLock.RUnlock()
 			if !ok {
-				log.Printf("WS: cookie (%v) %v not found", cookie.Value, r.URL)
+				// log.Printf("WS: cookie (%v) %v not found", cookie.Value, r.URL)
 				doPasswordCheck()
 				return
 			}
@@ -816,7 +816,7 @@ func (ws *WebServer) auth(next http.Handler) http.Handler {
 				ws.sessionsLock.Lock()
 				delete(ws.sessions, cookie.Value)
 				ws.sessionsLock.Unlock()
-				log.Printf("WS: cookie (%v) %v expired", cookie.Value, r.URL)
+				// log.Printf("WS: cookie (%v) %v expired", cookie.Value, r.URL)
 				doPasswordCheck()
 				return
 			}
