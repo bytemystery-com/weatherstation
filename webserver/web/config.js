@@ -237,4 +237,8 @@ function prepareDataFromString(data, id, name)
 		data.append(name != null && name != undefined ? name : id, ctrl.value);
 }
 
+function doMain()
+{
+	window.location.href = "index.html";
+}
 

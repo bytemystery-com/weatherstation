@@ -115,10 +115,6 @@ legend
 	width: 22em;
 }
 
-.status_tr
-{
-}
-
 .status_key
 {
 	font-weight: bold;
@@ -214,7 +210,6 @@ legend
 
 .version
 {
-	display:inline-block;
 	float: right;
 	font-size: 60%;
 	padding-bottom: 1.0em;
@@ -272,4 +267,23 @@ legend
 .container
 {
 	float: left;
+}
+
+.back
+{
+	float: left;
+	position: relative;
+	color: #00007F;
+	top: 2px;
+	width: 20px;
+	font-size: 32px;
+	font-weight: bold;
+	margin-left: 15px;
+}
+
+.back:hover, .back:focus
+{
+	color: #0000FF;
+	text-decoration: none;
+	cursor: pointer;
 }
