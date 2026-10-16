@@ -60,10 +60,29 @@ func GetCPUFrequency() (uint64, error) {
 
 /*
 https://www.raspberrypi.com/news/heating-and-cooling-raspberry-pi-5/
+https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#cooling-raspberry-pi-5
 It is actively managed by the Raspberry Pi firmware:
-at 60°C the blower’s fan will be turned on,
-at 67.5°C fan speed will be increased,
-and finally at 75°C the fan increases to full speed
+
+[pi5]
+# Stufe 0: Ab 50°C einschalten, bei 45°C ausschalten, ~30% Geschwindigkeit
+dtparam=fan_temp0=50000
+dtparam=fan_temp0_hyst=5000
+dtparam=fan_temp0_speed=75
+
+# Stufe 1: Ab 60°C erhöhen, bei 55°C verringern, ~50% Geschwindigkeit
+dtparam=fan_temp1=60000
+dtparam=fan_temp1_hyst=5000
+dtparam=fan_temp1_speed=125
+
+# Stufe 2: Ab 67.5°C erhöhen, bei 62.5°C verringern, ~70% Geschwindigkeit
+dtparam=fan_temp2=67500
+dtparam=fan_temp2_hyst=5000
+dtparam=fan_temp2_speed=175
+
+# Stufe 3: Ab 75°C volle Leistung, bei 70°C verringern, 100% Geschwindigkeit
+dtparam=fan_temp3=75000
+dtparam=fan_temp3_hyst=5000
+dtparam=fan_temp3_speed=255
 */
 func GetFanRPM() (int, error) {
 	entries, err := os.ReadDir("/sys/class/hwmon")
@@ -256,6 +275,9 @@ func Get5VVoltage() (int, error) {
 
 	return int(voltage*1000.0 + 0.5), nil
 }
+
+// 5A PD ok
+// od -A n -d -j 2 --endian=big /proc/device-tree/chosen/power/max_current
 
 /*
 https://www.raspberrypi.com/documentation/computers/os.html
