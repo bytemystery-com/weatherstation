@@ -181,17 +181,16 @@ func PressureAtSeaLevel(pressure, height, temp, humidity float64) float64 {
 
 // Physikalische Konstanten nach den Rankine-Kirchhoff-Spezifikationen (Romps 2026)
 const (
-	cPd   = 1005.7  // Spezifische Wärmekapazität trockene Luft (J/kg/K)
-	cPv   = 1867.0  // Spezifische Wärmekapazität Wasserdampf (J/kg/K)
-	cCl   = 4182.0  // Spezifische Wärmekapazität flüssiges Wasser (J/kg/K)
-	rD    = 287.04  // Gaskonstante trockene Luft (J/kg/K)
-	rV    = 461.53  // Gaskonstante Wasserdampf (J/kg/K)
-	pTrip = 611.65  // Tripelpunkt-Druck von Wasser (Pa)
-	tTrip = 273.16  // Tripelpunkt-Temperatur von Wasser (K)
-	e0    = 2.451e6 // Latente Wärme der Verdampfung am Tripelpunkt (J/kg)
+	cPd     = 1005.7  // Spezifische Wärmekapazität trockene Luft (J/kg/K)
+	cPv     = 1867.0  // Spezifische Wärmekapazität Wasserdampf (J/kg/K)
+	cCl     = 4182.0  // Spezifische Wärmekapazität flüssiges Wasser (J/kg/K)
+	rD      = 287.04  // Gaskonstante trockene Luft (J/kg/K)
+	rV      = 461.53  // Gaskonstante Wasserdampf (J/kg/K)
+	pTrip   = 611.65  // Tripelpunkt-Druck von Wasser (Pa)
+	tTrip   = 273.16  // Tripelpunkt-Temperatur von Wasser (K)
+	e0      = 2.451e6 // Latente Wärme der Verdampfung am Tripelpunkt (J/kg)
+	epsilon = rD / rV
 )
-
-const epsilon = rD / rV
 
 // saturationVaporPressureRomps berechnet den Sättigungsdampfdruck exakt nach
 // der integrierten Clausius-Clapeyron-Gleichung (Rankine-Kirchhoff-Approximation).
@@ -204,7 +203,7 @@ func saturationVaporPressureRomps(tKelvin float64) float64 {
 	return pTrip * math.Exp(exponent)
 }
 
-// RompsWetBulb berechnet die exakte thermodynamische Feuchttemperatur in °C.
+// RompsWetBulb berechnet die thermodynamische Feuchttemperatur in °C.
 // tC   : Lufttemperatur (Trockentemperatur) in °C
 // rhPct: Relative Luftfeuchtigkeit in % (0.0 bis 100.0)
 // pPa  : Realer Stationsluftdruck in Pascal (z.B. 101325 für Meereshöhe)
