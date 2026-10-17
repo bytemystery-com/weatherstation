@@ -772,7 +772,7 @@ func (bmp *Bmp581) configure() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Eff osr: 0x%02x", data[1].Data[0])
+	// log.Printf("Eff osr: 0x%02x", data[1].Data[0])
 	if (data[1].Data[0] & BMP581_EFF_OSR_ODR_ISVALID) == 0 {
 		return fmt.Errorf("Invalid ODR")
 	}
