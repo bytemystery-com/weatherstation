@@ -177,6 +177,7 @@ func PressureAtSeaLevel(pressure, height, temp, humidity float64) float64 {
 }
 
 // https://github.com/davidromps/heatindex
+// https://journals.ametsoc.org/view/journals/apme/65/2/JAMC-D-25-0130.1.xml?utm_source=chatgpt.com
 
 // Physikalische Konstanten nach den Rankine-Kirchhoff-Spezifikationen (Romps 2026)
 const (
