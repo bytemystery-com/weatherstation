@@ -42,7 +42,7 @@ import (
 
 const (
 	// DT;T;T2;H;H2;DP;DP2;P;PN;P2;PN2;T;T2;L;L2;ESHT;EBMH;EVEML
-	DATA_HEADERLINE = "# Weather station - %s\r\n# Version: %s\r\nDate Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %%] (SHT);Humidity2 [rel %%] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
+	DATA_HEADERLINE = "# Weather station - %s\r\n# Version: %s\r\nDate Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %%] (SHT);Humidity2 [rel %%] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Wet bulb [°C];Wet bulb2 [°C];Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
 )
 
 type SdData struct {
@@ -65,6 +65,8 @@ type SdDataEntry struct {
 	T2_2 float32
 	L_1  float32
 	L_2  float32
+	WB_1 float32
+	WB_2 float32
 	E_1  uint32
 	E_2  uint32
 	E_3  uint32
@@ -117,10 +119,10 @@ func (sd *SdData) writeEntryInternal(file string, data *SdDataEntry, now *time.T
 	}
 	defer f.Close()
 
-	line := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%d\r\n",
+	line := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%d\r\n",
 		now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(),
 		data.T1_1, data.T1_2, data.H_1, data.H_2, data.Dp_1, data.Dp_2, data.P_1, data.Pn_1, data.P_2, data.Pn_2,
-		data.T2_1, data.T2_2, data.L_1, data.L_2, data.E_1, data.E_2, data.E_3)
+		data.T2_1, data.T2_2, data.L_1, data.L_2, data.WB_1, data.WB_2, data.E_1, data.E_2, data.E_3)
 
 	_, err = f.WriteString(line)
 	return err
@@ -259,6 +261,8 @@ type csvEntry struct {
 	Pn2   float32 `json:"pn2"`
 	L     float32 `json:"l"`
 	L2    float32 `json:"l2"`
+	WB    float32 `json:"wb"`
+	WB2   float32 `json:"wb2"`
 }
 
 type csvData struct {
@@ -326,12 +330,29 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 			entry.P2 = entry.P
 			entry.Pn2 = entry.Pn
 		} else {
-			n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
-				&year, &month, &day, &hour, &min, &sec,
-				&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
-				&entry.P, &entry.Pn, &entry.P2, &entry.Pn2, &dummy, &dummy, &entry.L, &entry.L2)
-			if err != nil || n != 20 {
-				continue
+			var verMaj int
+			var verMin int
+			var verNumber int
+			n, err := fmt.Sscanf(version, "%d.%d", &verMaj, &verMin)
+			if err == nil && n == 2 {
+				verNumber = ((verMaj & 0xFF) << 8) | (verMin & 0xFF)
+			}
+			n = 0
+			if verNumber >= 0x0300 {
+				n, err = fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
+					&year, &month, &day, &hour, &min, &sec,
+					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
+					&entry.P, &entry.Pn, &entry.P2, &entry.Pn2, &dummy, &dummy, &entry.L, &entry.L2,
+					&entry.WB, &entry.WB2, &dummy, &dummy, &dummy)
+			}
+			if err != nil || n != 25 {
+				n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
+					&year, &month, &day, &hour, &min, &sec,
+					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
+					&entry.P, &entry.Pn, &entry.P2, &entry.Pn2, &dummy, &dummy, &entry.L, &entry.L2)
+				if err != nil || n != 20 {
+					continue
+				}
 			}
 		}
 		dateTime := time.Date(year, time.Month(month), day, hour, min, sec, 0, time.Local)

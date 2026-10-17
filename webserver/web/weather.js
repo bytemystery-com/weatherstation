@@ -1,4 +1,4 @@
-const version = "v3.1";
+const version = "v3.2";
 
 var updateDataTimer = null;
 var updateDataTimerGraph = null;
@@ -37,6 +37,12 @@ graphs.push(graph_d);
 
 var graph_d2 = new SVGGraph("d2_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
 graphs.push(graph_d2);
+
+var graph_wb = new SVGGraph("wb_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
+graphs.push(graph_wb);
+
+var graph_wb2 = new SVGGraph("wb2_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
+graphs.push(graph_wb2);
 
 var graph_l = new SVGGraph("l_", 0, 25, 0, 1000, 24, 980, 1, 4, 50, 250, 70, 40, 20, 20);
 graphs.push(graph_l);
@@ -98,6 +104,8 @@ function doLoadGraph()
 	graph_h2.yScaleText = "Humidity (long) [% rel]";
 	graph_d.yScaleText = "Dew point [°C]";
 	graph_d2.yScaleText = "Dew point (long) [°C]";
+	graph_wb.yScaleText = "Wet bulb [°C]";
+	graph_wb2.yScaleText = "Wet bulb (long) [°C]";
 	graph_l.yScaleText = "Luminosity [lux]";
 	graph_l2.yScaleText = "Luminosity (long) [lux]";
 	
@@ -295,6 +303,10 @@ function doPeriodic()
 					tmp.textContent = json.sensors[0].pressure2.toFixed(1) + " / " + json.sensors[0].pressure2_normal.toFixed(1) + " hPa";
 				if (tmp = document.getElementById("summary_pressure_trend"))
 					tmp.textContent = json.status.pressure_trend_3.toFixed(2) + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
+				if (tmp = document.getElementById("summary_wetbulb"))
+					tmp.textContent = json.status.wet_bulb.toFixed(1) + " °C";
+				if (tmp = document.getElementById("summary_wetbulb2"))
+					tmp.textContent = json.status.wet_bulb2.toFixed(1) + " °C";
 				if (tmp = document.getElementById("summary_lux"))
 					tmp.textContent = json.sensors[2].lux.toFixed(1) + " lx";
 				if (tmp = document.getElementById("summary_lux2"))
@@ -568,6 +580,13 @@ function doPeriodicGraph()
 							{
 								if (item.d2 !== undefined)
 									y = parseFloat(item.d2);
+							}
+							else if (graph == graph_wb)
+								y = parseFloat(item.wb);
+							else if (graph == graph_wb2)
+							{
+								if (item.wb2 !== undefined)
+									y = parseFloat(item.wb2);
 							}
 							else if (graph == graph_l)
 								y = parseFloat(item.l);

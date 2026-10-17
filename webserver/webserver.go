@@ -108,6 +108,8 @@ type WebDataAll struct {
 	Lux      WebDataLux
 	Pressure WebDataPressure
 	Humidity WebDataHumidity
+	WetBulb  float32
+	WetBulb2 float32
 }
 
 type WebCallBacks interface {
@@ -208,6 +210,8 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 		PressureTrend3         float32     `json:"pressure_trend_3"`
 		PressureTrend1Goodness float32     `json:"pressure_trend_1_goodness"`
 		PressureTrend3Goodness float32     `json:"pressure_trend_3_goodness"`
+		WetBulb                float32     `json:"wet_bulb"`
+		WetBulb2               float32     `json:"wet_bulb2"`
 		Time                   timed       `json:"time"`
 		Sd                     sd          `json:"sd"`
 		Resets                 uint        `json:"resets"`
@@ -266,6 +270,8 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 			PressureTrend1Goodness: data.Pressure.PressureTrend1Goodness,
 			PressureTrend3:         data.Pressure.PressureTrend3,
 			PressureTrend3Goodness: data.Pressure.PressureTrend3Goodness,
+			WetBulb:                data.WetBulb,
+			WetBulb2:               data.WetBulb2,
 			Errors:                 errors,
 			Resets:                 uint(ws.cfg.GetIntValue(cfg.SECTION_RUN, cfg.KEY_RUN_REBOOT, 0)),
 			Sd: sd{

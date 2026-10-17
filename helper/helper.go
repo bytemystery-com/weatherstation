@@ -176,6 +176,93 @@ func PressureAtSeaLevel(pressure, height, temp, humidity float64) float64 {
 	return pressure * math.Exp(x)
 }
 
+// https://github.com/davidromps/heatindex
+
+// Physikalische Konstanten nach den Rankine-Kirchhoff-Spezifikationen (Romps 2026)
+const (
+	cPd   = 1005.7  // Spezifische Wärmekapazität trockene Luft (J/kg/K)
+	cPv   = 1867.0  // Spezifische Wärmekapazität Wasserdampf (J/kg/K)
+	cCl   = 4182.0  // Spezifische Wärmekapazität flüssiges Wasser (J/kg/K)
+	rD    = 287.04  // Gaskonstante trockene Luft (J/kg/K)
+	rV    = 461.53  // Gaskonstante Wasserdampf (J/kg/K)
+	pTrip = 611.65  // Tripelpunkt-Druck von Wasser (Pa)
+	tTrip = 273.16  // Tripelpunkt-Temperatur von Wasser (K)
+	e0    = 2.451e6 // Latente Wärme der Verdampfung am Tripelpunkt (J/kg)
+)
+
+const epsilon = rD / rV
+
+// saturationVaporPressureRomps berechnet den Sättigungsdampfdruck exakt nach
+// der integrierten Clausius-Clapeyron-Gleichung (Rankine-Kirchhoff-Approximation).
+// Hierbei wird die Temperaturabhängigkeit der latenten Wärme mathematisch korrekt berücksichtigt.
+func saturationVaporPressureRomps(tKelvin float64) float64 {
+	// Exakte thermodynamische Integration nach Romps (2026)
+	exponent := (e0/(rV*tTrip)-(cPv-cCl)/rV)*(1.0-tTrip/tKelvin) +
+		((cPv-cCl)/rV)*math.Log(tKelvin/tTrip)
+
+	return pTrip * math.Exp(exponent)
+}
+
+// RompsWetBulb berechnet die exakte thermodynamische Feuchttemperatur in °C.
+// tC   : Lufttemperatur (Trockentemperatur) in °C
+// rhPct: Relative Luftfeuchtigkeit in % (0.0 bis 100.0)
+// pPa  : Realer Stationsluftdruck in Pascal (z.B. 101325 für Meereshöhe)
+func GetRompsWetBulb(tC, rhPct, pPa float64) (float64, error) {
+	if rhPct < 0.0 || rhPct > 100.0 || pPa <= 0.0 {
+		return 0.0, fmt.Errorf("ungültige Eingabewerte: RH=%v, Druck=%v", rhPct, pPa)
+	}
+
+	t := tC + 273.15
+	rh := rhPct / 100.0
+
+	// Aktuellen Dampfdruck (e) und Mischungsverhältnis (w) berechnen
+	pSatT := saturationVaporPressureRomps(t)
+	e := rh * pSatT
+
+	if e >= pPa {
+		return 0.0, fmt.Errorf("physikalischer Grenzfehler: Partialdampfdruck (%v Pa) übersteigt Gesamtluftdruck (%v Pa)", e, pPa)
+	}
+	w := epsilon * e / (pPa - e)
+
+	// Iterativer Newton-Raphson Solver
+	tW := t // Startwert
+	const maxIterations = 100
+	const tolerance = 1e-6
+
+	for i := 0; i < maxIterations; i++ {
+		pSatTw := saturationVaporPressureRomps(tW)
+		if pSatTw >= pPa {
+			pSatTw = pPa - 1e-3 // Schutz vor Singularität / Division durch Null
+		}
+
+		wSatTw := epsilon * pSatTw / (pPa - pSatTw)
+
+		// Temperaturabhängige latente Wärme der Verdampfung exakt berechnet bei tW
+		lTw := e0 + (cPv-cCl)*(tW-tTrip)
+
+		// f(tW) ist die thermodynamische Energiebilanz-Gleichung (Enthalpiedifferenz)
+		f := (cPd+w*cPv)*(t-tW) - lTw*(wSatTw-w)
+
+		// Erste Ableitung f'(tW) unter exakter Einbeziehung der Clausius-Clapeyron-Steigung
+		dpSatDTr := pSatTw * (e0 + (cPv-cCl)*(tW-tTrip)) / (rV * tW * tW)
+		dwSatDTr := epsilon * pPa * dpSatDTr / ((pPa - pSatTw) * (pPa - pSatTw))
+		dfDTw := -(cPd + w*cPv) - lTw*dwSatDTr - (cPv-cCl)*(wSatTw-w)
+
+		// Newton-Schrittausführung
+		tWNew := tW - f/dfDTw
+
+		// Bei erfolgreicher Konvergenz innerhalb der Toleranzgrenze abbrechen
+		if math.Abs(tWNew-tW) < tolerance {
+			return math.Round((tWNew-273.15)*100) / 100, nil
+		}
+
+		tW = tWNew
+	}
+
+	// KRITISCH: Keine stillschweigende Rückgabe ungenauer Werte bei mathematischer Divergenz
+	return 0.0, fmt.Errorf("algebraischer Fehler: Newton-Raphson-Verfahren konvergiert nicht innerhalb von %d Iterationen", maxIterations)
+}
+
 // returns a0, a1, and goodness
 // http://elsenaju.info/Rechnen/Ausgleichsgerade.htm
 // y = a1*x + a0

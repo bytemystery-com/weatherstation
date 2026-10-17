@@ -105,6 +105,8 @@ func (w WebCallbacksImpl) GetData() *webserver.WebDataAll {
 			DewPoint:     Data.F_dp.GetValue(),
 			DewPoint2:    Data.F2_dp.GetValue(),
 		},
+		WetBulb:  Data.F_wetBulb.GetValue(),
+		WetBulb2: Data.F2_wetBulb.GetValue(),
 	}
 	return &data
 }
@@ -162,6 +164,8 @@ func main() {
 		Data.F2_pressureNormal.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_P2, cfg.DEF_PRESSURE_FC2))
 		Data.F_temp2.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_T, cfg.DEF_TEMPERATURE_FC))
 		Data.F2_temp2.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_T2, cfg.DEF_TEMPERATURE_FC2))
+		Data.F_wetBulb.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_WB, cfg.DEF_WET_BULB_FC))
+		Data.F2_wetBulb.SetFilterConstant(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_WB2, cfg.DEF_WET_BULB_FC2))
 	})
 	if err != nil {
 		return
@@ -259,6 +263,16 @@ func main() {
 	}
 	Data.PressureTrendData.Values = make([]float64, 0, 10800/Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PRESSURE_TREND_INTERVAL, cfg.DEF_PRESSURE_TREND_INTERVAL))
 
+	// Wet bulb
+	Data.F_wetBulb, err = filter.NewAvgFilter(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_WB, cfg.DEF_WET_BULB_FC), 0)
+	if err != nil {
+		return
+	}
+	Data.F2_wetBulb, err = filter.NewAvgFilter(Data.Config.GetFloatValue(cfg.SECTION_FILTERDATA, cfg.KEY_FILTER_CONST_WB2, cfg.DEF_WET_BULB_FC2), 0)
+	if err != nil {
+		return
+	}
+
 	// SD
 	Data.SdData, err = sd.NewSdData(Data.Config)
 	if err != nil {
@@ -324,6 +338,15 @@ func doMeasure() {
 				log.Printf("TemperatureP: %.1f °C, Pressure: %.1f hPa, PressureNormal: %.1f hPa", temperatureP, pressure/100.0, pressureNormal/100.0)
 			}
 		}
+		if isValidH && isValidP {
+			wb, err := helper.GetRompsWetBulb(float64(temperature), float64(humidity), float64(pressure))
+			if err == nil {
+				Data.F_wetBulb.Add(float32(wb))
+				Data.F2_wetBulb.Add(float32(wb))
+			} else {
+				log.Printf("Wet bulb error: %v", err)
+			}
+		}
 	}
 }
 
@@ -343,6 +366,8 @@ func doSd() {
 	valid_p2 := false
 	valid_pn2 := false
 	valid_t22 := false
+	valid_wb := false
+	valid_wb2 := false
 	for !raspi.RebbotRequested.Load() {
 		sdEntry.L_1, valid_l1 = Data.F_lux.GetValueExt()
 		sdEntry.L_2, valid_l2 = Data.F2_lux.GetValueExt()
@@ -358,6 +383,8 @@ func doSd() {
 		sdEntry.Pn_2, valid_pn2 = Data.F2_pressureNormal.GetValueExt()
 		sdEntry.T2_1, valid_t2 = Data.F_temp2.GetValueExt()
 		sdEntry.T2_2, valid_t22 = Data.F2_temp2.GetValueExt()
+		sdEntry.WB_1, valid_wb = Data.F_wetBulb.GetValueExt()
+		sdEntry.WB_2, valid_wb2 = Data.F2_wetBulb.GetValueExt()
 		sdEntry.P_1 /= 100.0
 		sdEntry.P_2 /= 100.0
 		sdEntry.Pn_1 /= 100.0
@@ -368,7 +395,7 @@ func doSd() {
 		sdEntry.E_3, _ = Data.Veml7700.GetError()
 
 		if valid_l1 && valid_l2 && valid_t1 && valid_t12 && valid_h1 && valid_h2 && valid_dp1 && valid_dp2 &&
-			valid_p && valid_pn && valid_t2 && valid_p2 && valid_pn2 && valid_t22 {
+			valid_p && valid_pn && valid_t2 && valid_p2 && valid_pn2 && valid_t22 && valid_wb && valid_wb2 {
 			Data.SdData.WriteEntry(&sdEntry)
 		}
 		time.Sleep(time.Duration(Data.Config.GetIntValue(cfg.SECTION_DATA, cfg.KEY_DATA_INTERVAL, cfg.DEF_DATA_INTERVAL)) * time.Second)

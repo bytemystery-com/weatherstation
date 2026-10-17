@@ -58,6 +58,8 @@ type Data struct {
 	F2_pressureNormal *filter.AvgFilter
 	F_temp2           *filter.AvgFilter
 	F2_temp2          *filter.AvgFilter
+	F_wetBulb         *filter.AvgFilter
+	F2_wetBulb        *filter.AvgFilter
 	Veml7700          *sensors.Veml7700
 	Sht45             *sensors.Sht45
 	Bmp581            *sensors.Bmp581

@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "2.9"
+	WEATHER_STATION_VERSION = "3.0"
 
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"
@@ -51,6 +51,8 @@ const (
 	KEY_FILTER_CONST_P2  = "filter_constant_p2"
 	KEY_FILTER_CONST_L   = "filter_constant_l"
 	KEY_FILTER_CONST_L2  = "filter_constant_l2"
+	KEY_FILTER_CONST_WB  = "filter_constant_w"
+	KEY_FILTER_CONST_WB2 = "filter_constant_wb2"
 
 	SECTION_GENERAL                     = "general"
 	KEY_GENERAL_HEIGHT                  = "height"
@@ -98,9 +100,11 @@ const (
 	DEF_DEWPOINT_FC                 = 0.1
 	DEF_DEWPOINT_FC2                = 0.002
 	DEF_PRESSURE_FC                 = 0.1
-	DEF_PRESSURE_FC2                = 0.002
+	DEF_PRESSURE_FC2                = 0.001
 	DEF_LUX_FC                      = 0.3 // nach 4 Werten 75%
 	DEF_LUX_FC2                     = 0.004
+	DEF_WET_BULB_FC                 = 0.1
+	DEF_WET_BULB_FC2                = 0.002
 	DEF_HEIGHT                      = 522
 	DEF_NAME                        = "Weather Station"
 	DEF_USE_PASSWORD                = false
@@ -260,6 +264,8 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_LUX_FC2, "Lux filter 2")
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC, "Pressure filter")
 	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, DEF_PRESSURE_FC2, "Pressure filter 2")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_WB, DEF_WET_BULB_FC, "Wet bulb filter")
+	c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_WB2, DEF_WET_BULB_FC2, "Wet bulb filter 2")
 
 	c.SetIntValue(SECTION_GENERAL, KEY_GENERAL_HEIGHT, DEF_HEIGHT, "Height of station")
 	c.SetStringValue(SECTION_GENERAL, KEY_GENERAL_NAME, DEF_NAME, "Name of station (title in browser)")
@@ -296,28 +302,32 @@ func (c *Cfg) SetDeaultCfg() {
 
 func (c *Cfg) GetJson() []byte {
 	type filterdata struct {
-		T_fc  float32 `json:"t_fc"`
-		T_fc2 float32 `json:"t_fc2"`
-		H_fc  float32 `json:"h_fc"`
-		H_fc2 float32 `json:"h_fc2"`
-		D_fc  float32 `json:"d_fc"`
-		D_fc2 float32 `json:"d_fc2"`
-		L_fc  float32 `json:"l_fc"`
-		L_fc2 float32 `json:"l_fc2"`
-		P_fc  float32 `json:"p_fc"`
-		P_fc2 float32 `json:"p_fc2"`
+		T_fc   float32 `json:"t_fc"`
+		T_fc2  float32 `json:"t_fc2"`
+		H_fc   float32 `json:"h_fc"`
+		H_fc2  float32 `json:"h_fc2"`
+		D_fc   float32 `json:"d_fc"`
+		D_fc2  float32 `json:"d_fc2"`
+		L_fc   float32 `json:"l_fc"`
+		L_fc2  float32 `json:"l_fc2"`
+		P_fc   float32 `json:"p_fc"`
+		P_fc2  float32 `json:"p_fc2"`
+		WB_fc  float32 `json:"wb_fc"`
+		WB_fc2 float32 `json:"wb_fc2"`
 	}
 	f := filterdata{
-		T_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T, DEF_TEMPERATURE_FC),
-		T_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T2, DEF_TEMPERATURE_FC2),
-		H_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H, DEF_HUMIDITY_FC),
-		H_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H2, DEF_HUMIDITY_FC2),
-		D_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP, DEF_DEWPOINT_FC),
-		D_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP2, DEF_DEWPOINT_FC2),
-		L_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L, DEF_LUX_FC),
-		L_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_LUX_FC2),
-		P_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC),
-		P_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, DEF_PRESSURE_FC2),
+		T_fc:   c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T, DEF_TEMPERATURE_FC),
+		T_fc2:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T2, DEF_TEMPERATURE_FC2),
+		H_fc:   c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H, DEF_HUMIDITY_FC),
+		H_fc2:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_H2, DEF_HUMIDITY_FC2),
+		D_fc:   c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP, DEF_DEWPOINT_FC),
+		D_fc2:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_DP2, DEF_DEWPOINT_FC2),
+		L_fc:   c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L, DEF_LUX_FC),
+		L_fc2:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_L2, DEF_LUX_FC2),
+		P_fc:   c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P, DEF_PRESSURE_FC),
+		P_fc2:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, DEF_PRESSURE_FC2),
+		WB_fc:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_WB, DEF_WET_BULB_FC),
+		WB_fc2: c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_WB2, DEF_WET_BULB_FC2),
 	}
 	type general struct {
 		Height      int    `json:"height"`
@@ -432,6 +442,26 @@ func (c *Cfg) SetCfg(r *http.Request) error {
 		f, err := strconv.ParseFloat(val, 32)
 		if err == nil {
 			c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_P2, float32(f), "")
+		} else {
+			allErrors = errors.Join(allErrors, err)
+		}
+	}
+
+	val = r.FormValue("wb_fc")
+	if val != "" {
+		f, err := strconv.ParseFloat(val, 32)
+		if err == nil {
+			c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_WB, float32(f), "")
+		} else {
+			allErrors = errors.Join(allErrors, err)
+		}
+	}
+
+	val = r.FormValue("wb_fc2")
+	if val != "" {
+		f, err := strconv.ParseFloat(val, 32)
+		if err == nil {
+			c.SetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_WB2, float32(f), "")
 		} else {
 			allErrors = errors.Join(allErrors, err)
 		}
