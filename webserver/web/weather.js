@@ -194,13 +194,17 @@ function kB2Str(kbSize)
 		return kbSize + " kB";
 	
 	else if (kbSize < 1024*1024)
-		return (kbSize/1024).toFixed(1) + " MB";
+		return (kbSize/1024).toFixed(2) + " MB";
 	
 	else if (kbSize < 1024*1024*1024)
 		return (kbSize/(1024*1024)).toFixed(2) + " GB";
 
 	else if (kbSize < 1024*1024*1024*1024)
 		return (kbSize/(1024*1024*1024)).toFixed(2) + " TB";
+	else if (kbSize < 1024*1024*1024*1024*1024)
+		return (kbSize/(1024*1024*1024*1024)).toFixed(2) + " PB";
+	else if (kbSize < 1024*1024*1024*1024*1024*1024)
+		return (kbSize/(1024*1024*1024*1024*1023)).toFixed(2) + " EB";
 	else
 		return "???";
 }
