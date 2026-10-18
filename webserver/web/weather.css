@@ -273,6 +273,7 @@ legend
 	margin-top: 10px;
   	padding-bottom: 0px;
     margin-bottom: 0px;
+	width: 19.5em;
 }
 
 .weather
@@ -283,7 +284,8 @@ legend
 
 .weather_iframe
 {
-	margin-bottom:15px;
+	margin-top:15px;
+	margin-bottom:20px;
 }
 
 .weather_iframe_last
