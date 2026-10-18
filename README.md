@@ -12,7 +12,8 @@ As sensors I use:
 - VEML7700 for ambient light
   
 The sensors are installed in a sensor enclosure connected to the Raspberry Pi via a 6 m cable using I²C communication. I have added a LTC4311 to improve signal quality - but tests have shown that it also
-works without it.
+works without it.  
+The sensor PCBs have been coated to protect against oxidation.
 
 Data are filtered with a two Exponential Moving Average (EMA) filters with different filter constants.
 So we get short-term and long-term filtered data.  
