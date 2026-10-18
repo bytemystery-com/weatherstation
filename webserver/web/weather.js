@@ -2,11 +2,13 @@ const version = "v3.2";
 
 var updateDataTimer = null;
 var updateDataTimerGraph = null;
+var updateIFrameTimer = null;
 
 var debug = 0;
 
 var updateInterval = 5000;
 var updateIntervalGraph = 30000;
+var updateIntervalIFrame = 30*60*1000;
 
 var data_request = null;
 var data_request_graph = null;
@@ -142,6 +144,8 @@ function doStart()
 {
 	if (!updateDataTimer)
 		updateDataTimer = setInterval(function(){doPeriodic()}, updateInterval);
+	if (!updateIFrameTimer)
+		updateIFrameTimer = setInterval(function(){doUpdateIFrames()}, updateIntervalIFrame);
 }
 
 function doStartGraph()
@@ -150,6 +154,7 @@ function doStartGraph()
 	if (!updateDataTimerGraph)
 		updateDataTimerGraph = setInterval(function(){doPeriodicGraph()}, updateIntervalGraph);
 }
+
 
 function onClickActualData()
 {
@@ -762,4 +767,16 @@ function log(msg)
 {
 	if (debug && window.console)
 		console.log(msg);
+}
+
+function doUpdateIFrames()
+{
+	var iframe = document.querySelector('.weather_iframe');
+		if (iframe) {
+		iframe.src = iframe.src;
+	}
+	iframe = document.querySelector('.weather_iframe_last');
+		if (iframe) {
+			iframe.src = iframe.src;
+	}
 }

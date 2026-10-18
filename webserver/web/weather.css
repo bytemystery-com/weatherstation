@@ -256,12 +256,39 @@ legend
 	float: left;
 	width: 21em;
 	margin-left: 0px;
+	margin-right: 20px;
 	margin-top: 10px;
 }
 
 .sysstat
 {
 	display: table-cell;
+}
+
+.weather_box
+{
+	float: left;
+	margin-left: 0px;
+	margin-right: 20px;
+	margin-top: 10px;
+  	padding-bottom: 0px;
+    margin-bottom: 0px;
+}
+
+.weather
+{
+    display: block;
+    line-height: 0;
+}
+
+.weather_iframe
+{
+	margin-bottom:15px;
+}
+
+.weather_iframe_last
+{
+	margin-bottom:0px;
 }
 
 .container
