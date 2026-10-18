@@ -359,6 +359,17 @@ function doPeriodic()
 						tmp.style.display = 'none';
 				}
 				
+				if (json.status.raspi.wifi_strength !== undefined && json.status.raspi.wifi_rx !== undefined && json.status.raspi.wifi_tx !== undefined)
+				{
+					if ((tmp = document.getElementById("sysstat_wifi")))
+						tmp.textContent = json.status.raspi.wifi_strength + " dBm / " + kB2Str(json.status.raspi.wifi_rx + json.status.raspi.wifi_tx);
+				}
+				else
+				{
+					if ((tmp = document.getElementById("sysstat_tr_wifi")))
+						tmp.style.display = 'none';
+				}
+
 				/*
 				if ((tmp = document.getElementById("summary_inttemp")))
 					tmp.textContent = json.sensors[json.sensors.length - 1].temperature + " °C";

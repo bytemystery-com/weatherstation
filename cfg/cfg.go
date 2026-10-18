@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "3.0"
+	WEATHER_STATION_VERSION = "3.1"
 
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"
@@ -315,6 +315,7 @@ func (c *Cfg) GetJson() []byte {
 		WB_fc  float32 `json:"wb_fc"`
 		WB_fc2 float32 `json:"wb_fc2"`
 	}
+
 	f := filterdata{
 		T_fc:   c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T, DEF_TEMPERATURE_FC),
 		T_fc2:  c.GetFloatValue(SECTION_FILTERDATA, KEY_FILTER_CONST_T2, DEF_TEMPERATURE_FC2),

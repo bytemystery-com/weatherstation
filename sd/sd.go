@@ -41,7 +41,7 @@ import (
 )
 
 const (
-	// DT;T;T2;H;H2;DP;DP2;P;PN;P2;PN2;T;T2;L;L2;ESHT;EBMH;EVEML
+	// DT;T;T2;H;H2;DP;DP2;P;PN;P2;PN2;T;T2;L;L2;WB;WB2;ESHT;EBMH;EVEML
 	DATA_HEADERLINE = "# Weather station - %s\r\n# Version: %s\r\nDate Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %%] (SHT);Humidity2 [rel %%] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Wet bulb [°C];Wet bulb2 [°C];Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
 )
 
@@ -286,7 +286,7 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 1024), 1024*1024)
-	var version string
+	var version uint
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
@@ -294,10 +294,11 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 			continue
 		}
 		if line[0] == '#' {
-			var v string
-			n, err := fmt.Sscanf(line, "# Version: %s", &v)
-			if err == nil && n == 1 {
-				version = v
+			var verMaj uint
+			var verMin uint
+			n, err := fmt.Sscanf(line, "# Version: %d.%d", &verMaj, &verMin)
+			if err == nil && n == 2 {
+				version = ((verMaj & 0xFF) << 8) | (verMin & 0xFF)
 			}
 			continue
 		}
@@ -312,7 +313,7 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 		var sec int
 		var entry csvEntry
 		var dummy float32
-		if version == "" {
+		if version == 0x0000 {
 			// old
 			// Date Time;Temp [°C] (SHT);Humidity [rel %] (SHT);Pressure [hPa] (BMX);Pressure normal height [hPa] (BMX);
 			// Dew point [°C] (SHT);Temp [°C] (BMX);Humidity [rel %] (BMX);Dew point [°C] (BMX);Light [Lx];
@@ -330,22 +331,16 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 			entry.P2 = entry.P
 			entry.Pn2 = entry.Pn
 		} else {
-			var verMaj int
-			var verMin int
-			var verNumber int
-			n, err := fmt.Sscanf(version, "%d.%d", &verMaj, &verMin)
-			if err == nil && n == 2 {
-				verNumber = ((verMaj & 0xFF) << 8) | (verMin & 0xFF)
-			}
-			n = 0
-			if verNumber >= 0x0300 {
-				n, err = fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
+			if version >= 0x0300 {
+				n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
 					&year, &month, &day, &hour, &min, &sec,
 					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
 					&entry.P, &entry.Pn, &entry.P2, &entry.Pn2, &dummy, &dummy, &entry.L, &entry.L2,
 					&entry.WB, &entry.WB2, &dummy, &dummy, &dummy)
-			}
-			if err != nil || n != 25 {
+				if err != nil || n != 20 {
+					continue
+				}
+			} else {
 				n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
 					&year, &month, &day, &hour, &min, &sec,
 					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,

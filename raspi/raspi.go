@@ -32,6 +32,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -429,4 +430,52 @@ func GetUptime() (uint32, error) {
 		return 0, err
 	}
 	return uint32(seconds), nil
+}
+
+var (
+	reWifiSignal  = regexp.MustCompile(`signal:\s*(-?\d+)\s*dBm`)
+	reWifiTraffic = regexp.MustCompile(`(?m)^\s*(RX|TX):\s*(\d+) bytes`)
+)
+
+// strength, rx, tx
+// dbm, kByte, kByte
+func GetWifiInfo(iface string) (int, uint64, uint64, error) {
+	out, err := exec.Command("iw", "dev", iface, "link").Output()
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	data := string(out)
+
+	m := reWifiSignal.FindStringSubmatch(data)
+	if len(m) != 2 {
+		return 0, 0, 0, fmt.Errorf("kein WLAN-Signal gefunden")
+	}
+
+	signal, err := strconv.Atoi(m[1])
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	var rx, tx uint64
+	matches := reWifiTraffic.FindAllStringSubmatch(data, -1)
+	if len(matches) != 2 {
+		return 0, 0, 0, fmt.Errorf("RX/TX-Werte nicht gefunden")
+	}
+
+	for _, m := range matches {
+		bytes, err := strconv.ParseUint(m[2], 10, 64)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+
+		switch m[1] {
+		case "RX":
+			rx = bytes / 1024
+		case "TX":
+			tx = bytes / 1024
+		}
+	}
+
+	return signal, rx, tx, nil
 }

@@ -203,6 +203,9 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 		Ram_used     uint32 `json:"ram_u"`
 		Ram_total    uint32 `json:"ram_t"`
 		Max_current  uint16 `json:"max_current"`
+		WifiStrength int    `json:"wifi_strength"`
+		WifiRx       uint64 `json:"wifi_rx"`
+		WifiTx       uint64 `json:"wifi_tx"`
 	}
 	type status struct {
 		Version                string      `json:"version"`
@@ -259,6 +262,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	raspiRamUsed, raspiRamTotal, _ := raspi.GetRam()
 	raspiDiskFree, raspiDiskTotal, _ := raspi.GetDiskSpace()
 	raspiMaxCurrent, _ := raspi.GetMaxCurrent()
+	raspiWifiStrength, raspiWifiRx, raspiWifiTx, _ := raspi.GetWifiInfo("wlan0")
 
 	dj := dataJson{
 		Config: config{
@@ -293,6 +297,9 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 				Ram_used:     raspiRamUsed,
 				Ram_total:    raspiRamTotal,
 				Max_current:  raspiMaxCurrent,
+				WifiStrength: raspiWifiStrength,
+				WifiRx:       raspiWifiRx,
+				WifiTx:       raspiWifiTx,
 			},
 		},
 		Sensors: list,
