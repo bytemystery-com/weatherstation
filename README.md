@@ -31,7 +31,7 @@ License: MIT
 ## Photos
 
 ![alt text](/screenshots/raspberry.jpg "Raspberry Pi")
-![alt text](/screenshots/sensorbox.jpg "Sensorbox")
+![alt text](/screenshots/sensorbox2.jpg "Sensorbox")
 
 ## Screenshots
 
