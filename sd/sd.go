@@ -337,7 +337,7 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
 					&entry.P, &entry.Pn, &entry.P2, &entry.Pn2, &dummy, &dummy, &entry.L, &entry.L2,
 					&entry.WB, &entry.WB2, &dummy, &dummy, &dummy)
-				if err != nil || n != 20 {
+				if err != nil || n != 25 {
 					continue
 				}
 			} else {
@@ -377,18 +377,13 @@ func (sd *SdData) GetData(startTime, endTime time.Time) ([]byte, error) {
 		Entries: make([]csvEntry, 0, 500),
 	}
 	start := time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
-	end := time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 0, 0, 0, 0, endTime.Location())
-	days := 0
-	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
-		days++
-	}
+	end := time.Date(endTime.Year(), endTime.Month(), endTime.Day(), 23, 59, 59, 0, endTime.Location())
 	var path string
-	var date time.Time
-	for day := range days {
-		date = startTime.Add(time.Duration(day) * 24 * time.Hour)
-		path = sd.GetFilePath(date)
-		err := sd.ReadCsv(path, startTime, endTime, &data.Entries)
-		_ = err
+	day := start
+	for day.Before(end) || day.Equal(end) {
+		path = sd.GetFilePath(day)
+		sd.ReadCsv(path, startTime, endTime, &data.Entries)
+		day = day.AddDate(0, 0, 1)
 	}
 
 	d, err := json.Marshal(data)
