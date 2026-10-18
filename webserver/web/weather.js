@@ -330,6 +330,8 @@ function doPeriodic()
 						tmp.textContent = (json.status.raspi.voltage_5/1000.0).toFixed(2) + " V";
 					if (tmp = document.getElementById("sysstat_3volt"))
 						tmp.textContent = (json.status.raspi.voltage_3/1000.0).toFixed(2) + " V";
+					if (tmp = document.getElementById("sysstat_max_current"))
+						tmp.textContent = (json.status.raspi.max_current/1000.0).toFixed(1) + " A";
 					if (tmp = document.getElementById("sysstat_serial"))
 						tmp.textContent = json.status.raspi.serial;
 					if (tmp = document.getElementById("sysstat_throttle"))

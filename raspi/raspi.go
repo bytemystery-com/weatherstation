@@ -27,6 +27,7 @@
 package raspi
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"os/exec"
@@ -278,6 +279,16 @@ func Get5VVoltage() (int, error) {
 
 // 5A PD ok
 // od -A n -d -j 2 --endian=big /proc/device-tree/chosen/power/max_current
+func GetMaxCurrent() (uint16, error) {
+	data, err := os.ReadFile("/proc/device-tree/chosen/power/max_current")
+	if err != nil {
+		return 0, err
+	}
+	if len(data) < 4 {
+		return 0, fmt.Errorf("file too short (%d Bytes)", len(data))
+	}
+	return binary.BigEndian.Uint16(data[2:4]), nil
+}
 
 /*
 https://www.raspberrypi.com/documentation/computers/os.html

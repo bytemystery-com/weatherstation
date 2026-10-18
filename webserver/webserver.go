@@ -202,6 +202,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 		Throttle     uint32 `json:"throttle"`
 		Ram_used     uint32 `json:"ram_u"`
 		Ram_total    uint32 `json:"ram_t"`
+		Max_current  uint16 `json:"max_current"`
 	}
 	type status struct {
 		Version                string      `json:"version"`
@@ -257,6 +258,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 	raspiSerial, _ := raspi.GetSerial()
 	raspiRamUsed, raspiRamTotal, _ := raspi.GetRam()
 	raspiDiskFree, raspiDiskTotal, _ := raspi.GetDiskSpace()
+	raspiMaxCurrent, _ := raspi.GetMaxCurrent()
 
 	dj := dataJson{
 		Config: config{
@@ -290,6 +292,7 @@ func (ws *WebServer) getUpdate(w http.ResponseWriter, _ *http.Request) {
 				Throttle:     raspiThrottle,
 				Ram_used:     raspiRamUsed,
 				Ram_total:    raspiRamTotal,
+				Max_current:  raspiMaxCurrent,
 			},
 		},
 		Sensors: list,
