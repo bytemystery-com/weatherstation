@@ -432,10 +432,7 @@ func GetUptime() (uint32, error) {
 	return uint32(seconds), nil
 }
 
-var (
-	reWifiSignal  = regexp.MustCompile(`signal:\s*(-?\d+)\s*dBm`)
-	reWifiTraffic = regexp.MustCompile(`(?m)^\s*(RX|TX):\s*(\d+) bytes`)
-)
+var reWifiSignal = regexp.MustCompile(`signal:\s*(-?\d+)\s*dBm`)
 
 // strength, rx, tx
 // dbm, kByte, kByte
@@ -445,9 +442,7 @@ func GetWifiInfo(iface string) (int, uint64, uint64, error) {
 		return 0, 0, 0, err
 	}
 
-	data := string(out)
-
-	m := reWifiSignal.FindStringSubmatch(data)
+	m := reWifiSignal.FindStringSubmatch(string(out))
 	if len(m) != 2 {
 		return 0, 0, 0, fmt.Errorf("kein WLAN-Signal gefunden")
 	}
@@ -457,24 +452,29 @@ func GetWifiInfo(iface string) (int, uint64, uint64, error) {
 		return 0, 0, 0, err
 	}
 
-	var rx, tx uint64
-	matches := reWifiTraffic.FindAllStringSubmatch(data, -1)
-	if len(matches) != 2 {
-		return 0, 0, 0, fmt.Errorf("RX/TX-Werte nicht gefunden")
+	readCounter := func(name string) (uint64, error) {
+		path := filepath.Join("/sys/class/net", iface, "statistics", name)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return 0, err
+		}
+
+		bytes, err := strconv.ParseUint(strings.TrimSpace(string(data)), 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		return bytes / 1024, nil
 	}
 
-	for _, m := range matches {
-		bytes, err := strconv.ParseUint(m[2], 10, 64)
-		if err != nil {
-			return 0, 0, 0, err
-		}
+	rx, err := readCounter("rx_bytes")
+	if err != nil {
+		return 0, 0, 0, err
+	}
 
-		switch m[1] {
-		case "RX":
-			rx = bytes / 1024
-		case "TX":
-			tx = bytes / 1024
-		}
+	tx, err := readCounter("tx_bytes")
+	if err != nil {
+		return 0, 0, 0, err
 	}
 
 	return signal, rx, tx, nil

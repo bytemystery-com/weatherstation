@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "3.1"
+	WEATHER_STATION_VERSION = "3.2"
 
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"
