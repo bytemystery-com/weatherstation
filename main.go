@@ -32,6 +32,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -40,11 +41,12 @@ import (
 	"weatherd/filter"
 	"weatherd/gpio"
 	"weatherd/helper"
-	"weatherd/i2c"
 	"weatherd/raspi"
 	"weatherd/sd"
 	"weatherd/sensors"
 	"weatherd/webserver"
+
+	"github.com/bytemystery-com/i2c"
 
 	_ "net/http/pprof"
 )
@@ -131,7 +133,7 @@ func main() {
 		}
 		log.SetOutput(w)
 	*/
-	log.Printf("Debug: %v", debug)
+	log.Printf("Debug: %v, Go version: %v", debug, runtime.Version()[2:])
 	// journalctl -u weatherd.service
 
 	if !debug {

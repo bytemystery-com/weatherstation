@@ -1,3 +1,5 @@
+github.com/bytemystery-com/i2c v1.0.1 h1:EJWA3xtfLR+lJ/gHQN90ytklozlemXLoC8waM+vx3Gk=
+github.com/bytemystery-com/i2c v1.0.1/go.mod h1:YFvDjJ5qjJrwwD5ts6q/W9OCSgpTOOSG+RxxIo/VNx0=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=

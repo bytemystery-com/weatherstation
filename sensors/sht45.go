@@ -32,9 +32,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/bytemystery-com/i2c"
 	"weatherd/cfg"
 	"weatherd/helper"
-	"weatherd/i2c"
 )
 
 // https://sensirion.com/media/documents/33FD6951/6A7C10A0/HT_DS_Datasheet_SHT4x_V7.3.pdf

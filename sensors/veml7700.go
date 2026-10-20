@@ -32,7 +32,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"weatherd/i2c"
+	"github.com/bytemystery-com/i2c"
 )
 
 // https://www.vishay.com/docs/84286/veml7700.pdf
@@ -67,17 +67,17 @@ const (
 
 	VEML7700_DEFAULT_CFG = (VEML7700_GAIN_08 | VEML7700_INTEG_TIME_100)
 
-	VEML7700_SHUTDOWN_ON   = (0x01)
-	VEML7700_SHUTDOWN_OFF  = (0x00)
-	VEML7700_SHUTDOWN_MASK = (0x01)
+	VEML7700_SHUTDOWN_ON   = 0x01
+	VEML7700_SHUTDOWN_OFF  = 0x00
+	VEML7700_SHUTDOWN_MASK = 0x01
 
 	VEML7700_POWERSAVING_MODE_1 = (0x00 << 1)
 	VEML7700_POWERSAVING_MODE_2 = (0x01 << 1)
 	VEML7700_POWERSAVING_MODE_3 = (0x02 << 1)
 	VEML7700_POWERSAVING_MODE_4 = (0x03 << 1)
 
-	VEML7700_POWERSAVING_ON  = (0x01)
-	VEML7700_POWERSAVING_OFF = (0x00)
+	VEML7700_POWERSAVING_ON  = 0x01
+	VEML7700_POWERSAVING_OFF = 0x00
 )
 
 type veml7700States int
@@ -181,7 +181,7 @@ func (veml *Veml7700) setStandby(on bool) error {
 		return err
 	}
 
-	cfg := uint16(data[1].Data[0]) | ((uint16(data[1].Data[1])) << 8)
+	cfg := uint16(data[1].Data[0]) | (uint16(data[1].Data[1]) << 8)
 	cfg &= ^uint16(VEML7700_SHUTDOWN_MASK)
 	if on {
 		cfg |= VEML7700_SHUTDOWN_ON
@@ -389,7 +389,7 @@ func (veml *Veml7700) measure() (float32, float32, uint16, bool, uint16, error) 
 	if err != nil {
 		return 0, 0, luxRaw, false, 0, err
 	}
-	cfg := uint16(data[1].Data[0]) | ((uint16(data[1].Data[1])) << 8)
+	cfg := uint16(data[1].Data[0]) | (uint16(data[1].Data[1]) << 8)
 	intTime := (cfg & VEML7700_INTEG_TIME_MASK)
 	gain := (cfg & VEML7700_GAIN_MASK)
 	var gainFactor float64 = 1.0

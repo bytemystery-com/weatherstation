@@ -29,6 +29,7 @@ package gpio
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -170,6 +171,7 @@ func NewGpioOutPin(device, pin uint, initHigh bool) (*GpioPin, error) {
 		uintptr(unix.GPIO_V2_GET_LINE_IOCTL),
 		uintptr(unsafe.Pointer(&request)),
 	)
+	runtime.KeepAlive(fd)
 	if errno != 0 {
 		return nil, fmt.Errorf("GPIO request failed: %w", errno)
 	}
@@ -221,6 +223,7 @@ func NewGpioInPin(device, pin uint, pull GpioPull) (*GpioPin, error) {
 		uintptr(unix.GPIO_V2_GET_LINE_IOCTL),
 		uintptr(unsafe.Pointer(&request)),
 	)
+	runtime.KeepAlive(fd)
 	if errno != 0 {
 		return nil, fmt.Errorf("GPIO request failed: %w", errno)
 	}
