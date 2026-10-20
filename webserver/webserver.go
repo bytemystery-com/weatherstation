@@ -70,7 +70,7 @@ type WebData struct {
 	Valid      bool   `json:"valid"`
 }
 
-func (w *WebData) GetErrors() uint {
+func (w WebData) GetErrors() uint {
 	return w.Errors
 }
 
