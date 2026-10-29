@@ -2,44 +2,31 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build-remote",
-            "type": "shell",
-            "dependsOn": "stop-remote-debug",
-            "dependsOrder": "sequence",
-            "command": "sshpass",
-            "args": [
-                "-p",
-                "${config:remotePass}",
-                "ssh",
-                "${config:remoteUser}@${config:remoteHost}",
-                "cd ${config:remoteFolder} && go build -gcflags=\"all=-N -l\" ."
-            ],
-            "problemMatcher": [
-                "$go"
-            ]
-        },
-        {
             "label": "debug-remote",
             "type": "shell",
-            "dependsOn": "build-remote",
-            "dependsOrder": "sequence",
+            "dependsOn": "stop-remote-debug",
             "command": "sshpass",
             "args": [
                 "-p",
                 "${config:remotePass}",
                 "ssh",
                 "${config:remoteUser}@${config:remoteHost}",
-                "/home/${config:remoteUser}/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec ${config:remoteFolder}/weatherd -- -d"
+                "cd ${config:remoteFolder} && go build -gcflags=\"all=-N -l\" -o ${config:program} ./${config:programFolder} && /home/${config:remoteUser}/go/bin/dlv --listen=:2345 --headless --api-version=2 --accept-multiclient exec ${config:remoteFolder}/${config:program} --"
             ],
             "isBackground": true,
             "problemMatcher": {
+                "owner": "go",
                 "pattern": {
-                    "regexp": "."
+                    "regexp": "^([^\\s].*\\.go):(\\d+):(\\d+):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "message": 4
                 },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "API server listening at",
-                    "endsPattern": ".*"
+                    "beginsPattern": "^(API server listening at|.*\\.go:\\d+:\\d+:)", 
+                    "endsPattern": "^(API server listening at|.*error.*)"
                 }
             }
         },
@@ -54,7 +41,7 @@
                 "${config:remoteUser}@${config:remoteHost}",
                 "pkill -x dlv || true"
             ],
-             "problemMatcher": []
+            "problemMatcher": []
         }
     ]
 }

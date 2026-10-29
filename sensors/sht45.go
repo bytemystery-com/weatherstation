@@ -391,8 +391,8 @@ func (sht *Sht45) handleHeater(temperature, humidity float64) time.Duration {
 func (sht *Sht45) loop() {
 	var start time.Time
 	var duration time.Duration
-	sleep := sht.measureCycle
 	defaultSleep := time.Duration(250 * time.Millisecond) // > 100 msec
+	sleep := defaultSleep
 	for {
 		time.Sleep(sleep)
 		switch sht.state {

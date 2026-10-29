@@ -459,8 +459,8 @@ func (veml *Veml7700) measure() (float32, float32, uint16, bool, uint16, error) 
 func (veml *Veml7700) loop() {
 	var start time.Time
 	var duration time.Duration
-	sleep := veml.measureCycle
 	defaultSleep := time.Duration(250 * time.Millisecond) // > 100 msec
+	sleep := defaultSleep
 	for {
 		time.Sleep(sleep)
 		switch veml.state {

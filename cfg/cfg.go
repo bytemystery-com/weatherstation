@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	WEATHER_STATION_VERSION = "3.3"
+	WEATHER_STATION_VERSION = "3.4"
 
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"
@@ -82,6 +82,7 @@ const (
 	KEY_HARDWARE_I2C_DEV_NUMBER              = "I2CDevNumber"
 	KEY_HARDWARE_SET_PIN_ON_START            = "SetPinOnStart"
 	KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER = "PinOnStartDeviceNumber"
+	KEY_HARDWARE_PIN_ON_START_NUMBER         = "PinOnStartNumber"
 	KEY_HARDWARE_SET_PIN_ON_START_HIGH       = "SetPinOnStartToHigh"
 
 	SECTION_RUN    = "run"
@@ -105,7 +106,7 @@ const (
 	DEF_LUX_FC2                     = 0.004
 	DEF_WET_BULB_FC                 = 0.1
 	DEF_WET_BULB_FC2                = 0.002
-	DEF_HEIGHT                      = 522
+	DEF_HEIGHT                      = 524
 	DEF_NAME                        = "Weather Station"
 	DEF_USE_PASSWORD                = false
 	DEF_UPDATE_INTERVAL             = 1000 // msec
@@ -128,6 +129,7 @@ const (
 	DEF_I2C_DEV_NUMBER              = 1
 	DEF_SET_PIN_ON_START            = -1 // off
 	DEF_PIN_ON_START_GPIODEV_NUMBER = 15 // gpiodev15
+	DEF_PIN_ON_START_NUMBER         = 17 // GPIO 17
 	DEF_SET_PIN_ON_START_HIGH       = true
 )
 
@@ -291,6 +293,7 @@ func (c *Cfg) SetDeaultCfg() {
 	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_I2C_DEV_NUMBER, DEF_I2C_DEV_NUMBER, "I2C bus number")
 	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_SET_PIN_ON_START, DEF_SET_PIN_ON_START, "Set pin to high on start (-1=disabled)")
 	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_PIN_ON_START_GPIODEV_NUMBER, DEF_PIN_ON_START_GPIODEV_NUMBER, "Gpio device used for set pin to high on start")
+	c.SetIntValue(SECTION_HARDWARE, KEY_HARDWARE_PIN_ON_START_NUMBER, DEF_PIN_ON_START_NUMBER, "Gpio pin used for set pin to high on start")
 	c.SetBoolValue(SECTION_HARDWARE, KEY_HARDWARE_SET_PIN_ON_START_HIGH, DEF_SET_PIN_ON_START_HIGH, "If true set pin on start to high, else to low if false")
 
 	c.SetStringValue(SECTION_DATA, KEY_DATA_FOLDER, DEF_DATA_FOLDER, "Folder for data (csv files)")
