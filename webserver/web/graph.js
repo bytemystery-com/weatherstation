@@ -34,7 +34,7 @@ function SVGGraph(prefix, minXScale, maxXScale, minYScale, maxYScale, maxXValue,
 	this.radius_x_bullet = 2;
 	this.radius_y_bullet = 2;
 	this.hasBullets = false;
-	this.svgNameSpace = "http://www.w3.org/2000/svg";
+	this.f = "http://www.w3.org/2000/svg";
 	this.getXAxisText = null;
 	this.getYAxisText = null;
 	this.userParam = null;

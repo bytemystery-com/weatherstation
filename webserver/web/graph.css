@@ -16,6 +16,7 @@
 	border-width: 1px;
 	border-radius: 7px;
     box-shadow: 5px 5px 7px rgb(180, 180, 180);
+	user-select: none;
 	-moz-user-select: none;
 }
 

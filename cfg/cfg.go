@@ -29,9 +29,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
-
 	"weatherd/helper"
 
 	"gopkg.in/ini.v1"
@@ -141,8 +142,15 @@ type Cfg struct {
 }
 
 func NewCfg(file string, doReload func()) (*Cfg, error) {
+	err := os.MkdirAll(filepath.Dir(file), 0o755)
+	if err != nil {
+		log.Printf("Mkdir for '%s' failed with %v", filepath.Dir(file), err)
+		return nil, err
+	}
+
 	ok, err := helper.ExistFile(file)
 	if err != nil {
+		log.Printf("Exist file for '%s' failed with %v", file, err)
 		return nil, err
 	}
 	c := Cfg{
@@ -152,14 +160,21 @@ func NewCfg(file string, doReload func()) (*Cfg, error) {
 	c.SetDeaultCfg()
 	if !ok {
 		log.Printf("CFG: New created in %s", file)
-		c.Save()
+		err := c.Save()
+		if err != nil {
+			log.Printf("Save cfg failed %v", err)
+		}
 	} else {
 		log.Printf("CFG: Loaded from %s", file)
 		err := c.ini.Append(file)
 		if err != nil {
+			log.Printf("Append cfg failed %v", err)
 			return nil, err
 		}
-		c.Save()
+		err = c.Save()
+		if err != nil {
+			log.Printf("Save2 cfg failed %v", err)
+		}
 	}
 	return &c, nil
 }
