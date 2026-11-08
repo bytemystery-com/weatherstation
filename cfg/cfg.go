@@ -33,13 +33,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+
 	"weatherd/helper"
 
 	"gopkg.in/ini.v1"
 )
 
 const (
-	WEATHER_STATION_VERSION = "3.4"
+	WEATHER_STATION_VERSION = "3.5"
 
 	SECTION_FILTERDATA   = "filterdata"
 	KEY_FILTER_CONST_T   = "filter_constant_t"

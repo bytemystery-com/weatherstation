@@ -1,3 +1,31 @@
+<!--
+Copyright (c) 2026 Reiner Pröls
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+SPDX-License-Identifier: MIT
+
+Author: Reiner Pröls
+
+Weather station
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -8,171 +36,166 @@
 		<meta http-equiv="pragma" content="no-cache"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<link rel="icon" type="image/svg+xml" href="favicon.svg">
+    	<link rel="stylesheet" href="reset.css"/>
 		<link rel="stylesheet" href="weather.css"/>
+		<link rel="stylesheet" href="graph.css"/>
+		<link rel="stylesheet" href="graph_weather.css"/>
 		<script src="graph.js"></script>
 		<script src="weather.js"></script>
 	</head>
 	<body onload="doLoad()">
 		<div class="siteframe">
 			<div class="container">
-				<div class="status" id="summary">
-					<fieldset class="box status_box_summary"><legend class="box_status" id="summary_caption">Summary</legend>
-						<div class="block_status" id="summary_display">
-						<table  class="status_table">
-							<tr class="status_tr" id="summary_tr_temperature">
-								<td class="status_key">Temperature</td>
-								<td class="status_value" id="summary_temperature">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_temperature2">
-								<td class="status_key">Temperature 2</td>
-								<td class="status_value" id="summary_temperature2">&nbsp;</td>
-							</tr>
-							<tr class="status_tr"  id="summary_tr_humidity">
-								<td class="status_key">Humidity</td>
-								<td class="status_value" id="summary_humidity">&nbsp;</td>
-							</tr>
-							<tr class="status_tr"  id="summary_tr_humidity2">
-								<td class="status_key">Humidity 2</td>
-								<td class="status_value" id="summary_humidity2">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_dewpoint">
-								<td class="status_key">Dew point</td>
-								<td class="status_value" id="summary_dewpoint">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_dewpoint2">
-								<td class="status_key">Dew point 2</td>
-								<td class="status_value" id="summary_dewpoint2">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_wetbulb">
-								<td class="status_key">Wet bulb</td>
-								<td class="status_value" id="summary_wetbulb">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_wetbulb2">
-								<td class="status_key">Wet bulb 2</td>
-								<td class="status_value" id="summary_wetbulb2">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_pressure">
-								<td class="status_key">Pressure</td>
-								<td class="status_value" id="summary_pressure">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_pressure2">
-								<td class="status_key">Pressure 2</td>
-								<td class="status_value" id="summary_pressure2">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_pressure_trend">
-								<td class="status_key">Trend (3 / 1)</td>
-								<td class="status_value" id="summary_pressure_trend">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_lux">
-								<td class="status_key">Lux</td>
-								<td class="status_value" id="summary_lux">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_lux2">
-								<td class="status_key">Lux 2</td>
-								<td class="status_value" id="summary_lux2">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_errors">
-								<td class="status_key">Errors</td>
-								<td class="status_value" id="summary_errors">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_sensors">
-								<td class="status_key">Sensors</td>
-								<td class="status_value" id="summary_sensors">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="summary_tr_version">
-								<td class="status_key">Version</td>
-								<td class="status_value" id="summary_version">&nbsp;</td>
-							</tr>
-						</table>
-						</div>
-					</fieldset>
-				</div>
-			</div>
-
-			<div class="container">
-				<fieldset class="box sysstat_box" id="sysstat_box"><legend class="box_legend" id="status_caption">System</legend>
-					<div class="sysstat" id="sysstat">
-						<table  class="status_table">
-							<tr class="status_tr" id="sysstat_tr_temperature">
-								<td class="status_key">Temperature</td>
-								<td class="status_value" id="sysstat_temperature">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_fan">
-								<td class="status_key">Fan</td>
-								<td class="status_value" id="sysstat_fan">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_cpu">
-								<td class="status_key">CPU usage</td>
-								<td class="status_value" id="sysstat_cpu">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_cpu_freq">
-								<td class="status_key">CPU frequency</td>
-								<td class="status_value" id="sysstat_cpu_freq">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_ram">
-								<td class="status_key">RAM (u / t)</td>
-								<td class="status_value" id="sysstat_ram">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_5volt">
-								<td class="status_key">Voltage 5V</td>
-								<td class="status_value" id="sysstat_5volt">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_3volt">
-								<td class="status_key">Voltage 3.3V</td>
-								<td class="status_value" id="sysstat_3volt">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_max_current">
-								<td class="status_key">PD max current</td>
-								<td class="status_value" id="sysstat_max_current">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_throttle">
-								<td class="status_key">Throttle</td>
-								<td class="status_value" id="sysstat_throttle">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_serial">
-								<td class="status_key">Serial</td>
-								<td class="status_value" id="sysstat_serial">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_sd">
-								<td class="status_key">SD card (f / t)</td>
-								<td class="status_value" id="sysstat_sd">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_wifi">
-								<td class="status_key">Wifi</td>
-								<td class="status_value" id="sysstat_wifi">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_date">
-								<td class="status_key">Date</td>
-								<td class="status_value" id="sysstat_date">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_time">
-								<td class="status_key">Time</td>
-								<td class="status_value" id="sysstat_time">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_uptime">
-								<td class="status_key">Uptime</td>
-								<td class="status_value" id="sysstat_uptime">&nbsp;</td>
-							</tr>
-							<tr class="status_tr" id="sysstat_tr_version">
-								<td class="status_key">Version</td>
-								<td class="status_value" id="sysstat_version">&nbsp;</td>
-							</tr>
-						</table>
-					</div>
+				<fieldset class="box fieldset_box"><legend class="legend" id="summary_caption">Summary</legend>
+					<table  class="status_table">
+						<tr class="status_tr" id="summary_tr_temperature">
+							<td class="status_key">Temperature</td>
+							<td class="status_value" id="summary_temperature">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_temperature2">
+							<td class="status_key">Temperature 2</td>
+							<td class="status_value" id="summary_temperature2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr"  id="summary_tr_humidity">
+							<td class="status_key">Humidity</td>
+							<td class="status_value" id="summary_humidity">&nbsp;</td>
+						</tr>
+						<tr class="status_tr"  id="summary_tr_humidity2">
+							<td class="status_key">Humidity 2</td>
+							<td class="status_value" id="summary_humidity2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_dewpoint">
+							<td class="status_key">Dew point</td>
+							<td class="status_value" id="summary_dewpoint">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_dewpoint2">
+							<td class="status_key">Dew point 2</td>
+							<td class="status_value" id="summary_dewpoint2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_wetbulb">
+							<td class="status_key">Wet bulb</td>
+							<td class="status_value" id="summary_wetbulb">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_wetbulb2">
+							<td class="status_key">Wet bulb 2</td>
+							<td class="status_value" id="summary_wetbulb2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_pressure">
+							<td class="status_key">Pressure</td>
+							<td class="status_value" id="summary_pressure">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_pressure2">
+							<td class="status_key">Pressure 2</td>
+							<td class="status_value" id="summary_pressure2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_pressure_trend">
+							<td class="status_key">Trend (3 / 1)</td>
+							<td class="status_value" id="summary_pressure_trend">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_lux">
+							<td class="status_key">Lux</td>
+							<td class="status_value" id="summary_lux">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_lux2">
+							<td class="status_key">Lux 2</td>
+							<td class="status_value" id="summary_lux2">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_errors">
+							<td class="status_key">Errors</td>
+							<td class="status_value" id="summary_errors">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_sensors">
+							<td class="status_key">Sensors</td>
+							<td class="status_value" id="summary_sensors">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="summary_tr_version">
+							<td class="status_key">Version</td>
+							<td class="status_value" id="summary_version">&nbsp;</td>
+						</tr>
+					</table>
 				</fieldset>
 			</div>
 
 			<div class="container">
-				<fieldset class="box weather_box" id="weather_box"><legend class="box_legend" id="weather_caption">Weather forecast</legend>
-					<div class="weather" id="weather">
-						<iframe class="weather_iframe" width='300' height='310' name='FC2' style='border:1px solid;border-radius:10px;border-color:#e5e8e8;' src='https://api.wetteronline.de/wetterwidget?gid=10866&modeid=FC2&seourl=muenchen&locationname=München&lang=de'></iframe>
-					</div>
+				<fieldset class="box fieldset_box" id="sysstat_box"><legend class="legend" id="status_caption">System</legend>
+					<table  class="status_table">
+						<tr class="status_tr" id="sysstat_tr_temperature">
+							<td class="status_key">Temperature</td>
+							<td class="status_value" id="sysstat_temperature">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_fan">
+							<td class="status_key">Fan</td>
+							<td class="status_value" id="sysstat_fan">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_cpu">
+							<td class="status_key">CPU usage</td>
+							<td class="status_value" id="sysstat_cpu">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_cpu_freq">
+							<td class="status_key">CPU frequency</td>
+							<td class="status_value" id="sysstat_cpu_freq">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_ram">
+							<td class="status_key">RAM (u / t)</td>
+							<td class="status_value" id="sysstat_ram">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_5volt">
+							<td class="status_key">Voltage 5V</td>
+							<td class="status_value" id="sysstat_5volt">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_3volt">
+							<td class="status_key">Voltage 3.3V</td>
+							<td class="status_value" id="sysstat_3volt">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_max_current">
+							<td class="status_key">PD max current</td>
+							<td class="status_value" id="sysstat_max_current">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_throttle">
+							<td class="status_key">Throttle</td>
+							<td class="status_value" id="sysstat_throttle">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_serial">
+							<td class="status_key">Serial</td>
+							<td class="status_value" id="sysstat_serial">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_sd">
+							<td class="status_key">SD card (f / t)</td>
+							<td class="status_value" id="sysstat_sd">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_wifi">
+							<td class="status_key">Wifi</td>
+							<td class="status_value" id="sysstat_wifi">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_date">
+							<td class="status_key">Date</td>
+							<td class="status_value" id="sysstat_date">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_time">
+							<td class="status_key">Time</td>
+							<td class="status_value" id="sysstat_time">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_uptime">
+							<td class="status_key">Uptime</td>
+							<td class="status_value" id="sysstat_uptime">&nbsp;</td>
+						</tr>
+						<tr class="status_tr" id="sysstat_tr_version">
+							<td class="status_key">Version</td>
+							<td class="status_value" id="sysstat_version">&nbsp;</td>
+						</tr>
+					</table>
+				</fieldset>
+			</div>
+
+			<div class="container">
+				<fieldset class="box fieldset_weather" id="weather_box"><legend class="legend" id="weather_caption">Weather forecast</legend>
+					<iframe class="weather_iframe" width='300' height='310' name='FC2' style='border:1px solid;border-radius:10px;border-color:#e5e8e8;' src='https://api.wetteronline.de/wetterwidget?gid=10866&modeid=FC2&seourl=muenchen&locationname=München&lang=de'></iframe>
 				</fieldset>
 			</div>
 			
 			<div class="break">&nbsp;</div>
 			
-			<fieldset id="date_group" name="date_group" class="box box_date"><legend class="box_status">Date</legend>
+			<fieldset id="date_group" name="date_group" class="box fieldset_box"><legend class="legend">Date</legend>
 				<div class="inputblock inputblock_last">
 					<input class="inputcheck" type="checkbox" id="actualdate" name="actualdate" checked onclick="onClickActualData()">
 					<label for="actualdate" class="label">Actual data</label>
@@ -182,7 +205,6 @@
 					<span class="label">Start date</span><br/>
 					<input class="date" type="date" id="startdate" name="startdate" onchange="onStartDate()">
 				</div>
-				<br/>&nbsp;<br/>&nbsp;<br/>
 				<div class="inputblock inputblock_last">
 					<span class="label">End date</span><br/>
 					<input class="date" type="date" id="enddate" name="enddate" onchange="onEndDate()">
@@ -381,8 +403,8 @@
 
 			<div class="break">&nbsp;</div>
 			
-			<fieldset class="box config_box"><legend class="box_status">Firmware update</legend>
-				<form class="status" id="config" enctype="multipart/form-data" action="firmwareupdate" method="POST" onsubmit="return doUpdate()">
+			<fieldset class="box fieldset"><legend class="legend">Firmware update</legend>
+				<form id="config" enctype="multipart/form-data" action="firmwareupdate" method="POST" onsubmit="return doUpdate()">
 					<div class="block_update">
 						<button class="submitbutton" type="button" form="" onclick="document.getElementById('update_file_upload').click()">Update...</button>
 						<input style="display:none" type="file" accept="" form="config" name="firmwarefile" id="update_file_upload" onchange="doUpdate()">

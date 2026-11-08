@@ -1,7 +1,58 @@
+/*!
+ * Copyright (c) 2026 Reiner Pröls
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * Author: Reiner Pröls
+ * 
+ * Main CSS rules
+ */
 
-@import "reset.css";
-@import "graph.css";
-@import "graph_weather.css";
+ *, *::before, *::after {
+  box-sizing: border-box;
+}
+
+@font-face {
+	font-display: swap;
+	font-style: normal;
+    font-family: "Roboto";
+    src: url("/fonts/roboto-v51-cyrillic_latin-regular.woff2") format("woff2");
+    font-weight: 400;
+}
+
+@font-face {
+	font-display: swap;
+	font-style: normal;
+    font-family: "Roboto";
+    src: url("/fonts/roboto-v51-cyrillic_latin-500.woff2") format("woff2");
+    font-weight: 500;
+}
+
+@font-face {
+	font-display: swap;
+	font-style: normal;
+    font-family: "Roboto";
+    src: url("/fonts/roboto-v51-cyrillic_latin-700.woff2") format("woff2");
+    font-weight: 700;
+}
 
 body
 {
@@ -10,14 +61,7 @@ body
 	min-width: 370px;
 	user-select: none;
 	-webkit-user-select: none;
-	-khtml-user-select: none;
-	-moz-user-select: none;
-	-o-user-select: none;
-}
-
-legend
-{
-	font-weight: bold;
+	font-family: Roboto, Arial, sans-serif;
 }
 
 .siteframe
@@ -27,9 +71,9 @@ legend
 	overflow: hidden;
 }
 
-.status
+.container
 {
-	display: table-cell;
+	float: left;
 }
 
 .box
@@ -50,11 +94,6 @@ legend
     box-shadow: 5px 5px 7px rgb(180, 180, 180);
 }
 
-.config_box
-{
-	float: left;
-}
-
 .box::after
 {
 	content: ".";
@@ -64,72 +103,47 @@ legend
 	visibility: hidden;
 }
 
-.status_box
+.fieldset_box
 {
 	float: left;
-	height: 13em;
-	margin-right: 10px;
-}
-
-.status_box_summary
-{
-	float: left;
-	width: 21em;
+	width: 22em;
 	margin-right: 20px;
 	margin-left: 0px;
 	margin-top: 10px;
 }
 
-.box_status
+.legend
 {
 	color: rgb(0, 0, 0);
+	font-weight: bold;
 }
 
-.box_date
-{
-	width: 370.66px;
-	box-sizing: border-box;
-}
-
-.block_update
-{
-	float: left;
-	padding-top: 20px;
-	padding-bottom: 10px;
-	padding-left: 5px;
-	padding-right: 10px;
-}
-
-.block_status
-{
-	float: left;
-	margin-right: 0px;
-	width: 21.5em;
-	margin-top: 0.2em;
-}
-
+/* Table */
 .status_table
 {
 	border-collapse: separate;
 	border-spacing: 0 0.4em;
-	width: 22em;
+	width: 100%;
 }
 
 .status_key
 {
 	font-weight: bold;
-	width: 17em;
+	width: 58%;
 }
 
 .status_value
 {
-	padding-left: 10px;
+	padding-left: 20px;
 	padding-top: 5px;
 	padding-bottom: 5px;
-	width: 21.5em;
+	padding-right: 0px;
+	width: 42%;
     white-space: nowrap;
 }
+/*---*/
 
+/* Files / Dirs */
 .dir
 {
 	cursor: pointer;
@@ -157,17 +171,22 @@ legend
 	overflow-y: auto;
 }
 
+/* Date  */
 .inputblock
 {
 	float: left;
-	margin-right: 50px;
-	/* width: 9em; */
+	margin-right: 20px;
+}
+
+.inputblock_last
+{
+	margin-right: 10px;
 }
 
 .inputfield
 {
 	position: relative;
-	width: 60px;
+	width: auto;
 	margin-top: 5px;
 }
 
@@ -177,6 +196,16 @@ legend
 	left: -4px;
 	margin-top: 3px;
 	margin-right: -4px;
+}
+
+/* Firmware */ 
+.block_update
+{
+	float: left;
+	padding-top: 20px;
+	padding-bottom: 10px;
+	padding-left: 5px;
+	padding-right: 10px;
 }
 
 .submitbutton
@@ -196,15 +225,6 @@ legend
     height: 0;
     visibility: hidden;
 	padding-top: 2em;
-	clear: both;
-}
-
-.break2
-{
-    display: block;
-    height: 0;
-    visibility: hidden;
-	padding-top: 6em;
 	clear: both;
 }
 
@@ -245,32 +265,20 @@ legend
 	vertical-align: middle;
 }
 
-.inputfield_text
+.break2
 {
 	position: relative;
 	margin-top: 5px;
 }
 
-.sysstat_box
-{
-	float: left;
-	width: 21em;
-	margin-left: 0px;
-	margin-right: 20px;
-	margin-top: 10px;
-}
-
-.sysstat
-{
-	display: table-cell;
-}
-
+/* Weather onlien iframe */
 .weather_box
 {
 	float: left;
 	margin-left: 0px;
 	margin-right: 20px;
 	margin-top: 10px;
+	margin-bottom: 0px;
   	padding-bottom: 0px;
     margin-bottom: 0px;
 	width: 19.5em;
@@ -282,20 +290,24 @@ legend
     line-height: 0;
 }
 
-.weather_iframe
-{
-	margin-top:15px;
-	margin-bottom:20px;
+.fieldset_weather {
+    float: left;
+    width: 22em;
+    margin-left: 0;
+    margin-right: 20px;
+    margin-top: 10px;
+    padding: 10px 20px 0px 20px;
+    height: calc(24em);
 }
 
-.weather_iframe_last
-{
-	margin-bottom:0px;
-}
-
-.container
-{
-	float: left;
+.weather_iframe {
+    display: block;
+	margin-top: 10px;
+	margin-bottom: 10px;
+    width: 100%;
+    height: 90%;
+    padding: 0;
+    border: 0;
 }
 
 .back
