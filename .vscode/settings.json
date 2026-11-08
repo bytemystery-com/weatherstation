@@ -1,6 +1,6 @@
 {
     "remoteHost": "192.168.0.183",
-    "remoteFolder": "/home/psyst/goweather",
+    "remoteFolder": "/home/psyst/weatherstation",
     "remoteUser": "psyst",
     "remotePass": "psyst",
     "programFolder": ".",
