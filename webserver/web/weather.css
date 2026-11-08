@@ -106,7 +106,7 @@ body
 .fieldset_box
 {
 	float: left;
-	width: 22em;
+	width: 23em;
 	margin-right: 20px;
 	margin-left: 0px;
 	margin-top: 10px;
@@ -129,7 +129,7 @@ body
 .status_key
 {
 	font-weight: bold;
-	width: 58%;
+	width: 55%;
 }
 
 .status_value
@@ -138,9 +138,15 @@ body
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-right: 0px;
-	width: 42%;
+	width: 45%;
     white-space: nowrap;
 }
+
+.status_table td
+{
+    line-height: 1.2;
+}
+
 /*---*/
 
 /* Files / Dirs */
@@ -281,7 +287,7 @@ body
 	margin-bottom: 0px;
   	padding-bottom: 0px;
     margin-bottom: 0px;
-	width: 19.5em;
+	width: auto;
 }
 
 .weather
@@ -292,7 +298,7 @@ body
 
 .fieldset_weather {
     float: left;
-    width: 22em;
+    width: 23em;
     margin-left: 0;
     margin-right: 20px;
     margin-top: 10px;

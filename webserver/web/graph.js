@@ -369,11 +369,14 @@ SVGGraph.prototype.createData = function()
 			var ellipse;
 			for (var i = 0; i<l; i++)
 			{
+				let y = this.yArray[i]
+				if (y > this.maxYScale - this.stepY)
+					y = this.maxYScale- this.stepY;
 				ellipse = document.createElementNS(this.svgNameSpace, "ellipse");
 				ellipse.setAttribute("class", "bullet");
 				ellipse.setAttribute("id", this.prefix + "graphdata_bullet_" + i);
 				ellipse.setAttribute("cx", this.xArray[i] - this.minXScale);
-				ellipse.setAttribute("cy", this.yArray[i] - this.minYScale);
+				ellipse.setAttribute("cy", y - this.minYScale);
 				ellipse.setAttribute("rx", this.radius_x_bullet / this.transform.scaleX);
 				ellipse.setAttribute("ry", this.radius_y_bullet / (-this.transform.scaleY));
 				g3.appendChild(ellipse);
@@ -382,8 +385,14 @@ SVGGraph.prototype.createData = function()
 		else
 		{
 			var strBuilder = new StringBuilder();
+
 			for (var i = 0; i<l; i++)
-				strBuilder.append((this.xArray[i] - this.minXScale) + "," + (this.yArray[i] - this.minYScale));
+			{
+				let y = this.yArray[i]
+				if (y > this.maxYScale - this.stepY)
+					y = this.maxYScale- this.stepY;
+				strBuilder.append((this.xArray[i] - this.minXScale) + "," + (y - this.minYScale));
+			}
 			
 			var line = document.createElementNS(this.svgNameSpace, "polyline");
 			line.setAttribute("id", this.prefix + "graphdata_line");
