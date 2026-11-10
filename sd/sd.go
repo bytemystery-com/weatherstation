@@ -338,7 +338,7 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 			entry.P2 = entry.P
 			entry.Pn2 = entry.Pn
 		} else {
-			if version >= 0x0306 {
+			if version >= 0x0306 { // PT3 and PT1 are new
 				n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
 					&year, &month, &day, &hour, &min, &sec,
 					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
