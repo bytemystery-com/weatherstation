@@ -387,10 +387,14 @@ func doSd() {
 		sdEntry.T2_2, valid_t22 = Data.F2_temp2.GetValueExt()
 		sdEntry.WB_1, valid_wb = Data.F_wetBulb.GetValueExt()
 		sdEntry.WB_2, valid_wb2 = Data.F2_wetBulb.GetValueExt()
+		sdEntry.PT1 = math.Float32frombits(Data.PressureTrendData.Trend1.Load())
+		sdEntry.PT3 = math.Float32frombits(Data.PressureTrendData.Trend3.Load())
 		sdEntry.P_1 /= 100.0
 		sdEntry.P_2 /= 100.0
 		sdEntry.Pn_1 /= 100.0
 		sdEntry.Pn_2 /= 100.0
+		sdEntry.PT1 /= 100.0
+		sdEntry.PT3 /= 100.0
 
 		sdEntry.E_1, _ = Data.Sht45.GetError()
 		sdEntry.E_2, _ = Data.Bmp581.GetError()
@@ -405,9 +409,9 @@ func doSd() {
 }
 
 func doPressureTrend() {
+	interval := Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PRESSURE_TREND_INTERVAL, cfg.DEF_PRESSURE_TREND_INTERVAL)
 	for !raspi.RebbotRequested.Load() {
 		pressure, isValid := Data.F_pressure.GetValueExt()
-		interval := Data.Config.GetIntValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_PRESSURE_TREND_INTERVAL, cfg.DEF_PRESSURE_TREND_INTERVAL)
 		if isValid {
 			if len(Data.PressureTrendData.Values) >= cap(Data.PressureTrendData.Values) {
 				copy(Data.PressureTrendData.Values, Data.PressureTrendData.Values[1:])

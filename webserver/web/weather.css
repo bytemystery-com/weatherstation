@@ -25,6 +25,13 @@
  * 
  * Main CSS rules
  */
+:root {
+  --weather-pressure_trend_0: transparent;
+  --weather-pressure_trend_1: #cefdc4;
+  --weather-pressure_trend_2: #fbf598;
+  --weather-pressure_trend_3: #ffc4b6;
+  --weather-pressure_trend_4: #edc9fe;
+}
 
  *, *::before, *::after {
   box-sizing: border-box;

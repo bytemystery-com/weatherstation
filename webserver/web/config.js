@@ -26,11 +26,11 @@
  * Weather station - config
 */
 
-const version = "v1.6";
+const version = "v1.7";
 
-var debug = 0;
+const debug = 0;
 
-var data_request = null;
+let data_request = null;
 
 function doLoad()
 {
@@ -42,7 +42,7 @@ function doLoad()
 
 function doPass()
 {
-	var ctrl, tmp;
+	let ctrl, tmp;
 	if ((ctrl = document.getElementById("use_pass")))
 	{
 		if ((tmp = document.getElementById("pass")))
@@ -73,7 +73,7 @@ function doGetValues()
 		{
 			if (data_request.response)
 			{
-				var json = JSON.parse(data_request.response);
+				const json = JSON.parse(data_request.response);
 				log(data_request.response);
 				setValue("t_fc", Number(json.filterdata.t_fc).toFixed(5));
 				setValue("t_fc2", Number(json.filterdata.t_fc2).toFixed(5));
@@ -106,10 +106,10 @@ function doSetValues(form)
 	if (data_request)
 		data_request.abort();
 
-	var request = new XMLHttpRequest();
+	const request = new XMLHttpRequest();
 	request.open(form.method, form.action, true);
 	noCacheInRequest(request);
-	var refreshTime = 1000;
+	const refreshTime = 1000;
 	request.onload = function()
 	{
 		log(request.responseText);
@@ -126,7 +126,7 @@ function doSetValues(form)
 			doGetValues();
 		}, refreshTime);
 	}
-	var data = new FormData();
+	const data = new FormData();
 
 	prepareData(data, "t_fc", null);
 	prepareData(data, "t_fc2", null);
@@ -165,15 +165,15 @@ function log(msg)
 
 function setValue(id, value)
 {
-	var tmp;
+	let tmp;
 	if ((tmp = document.getElementById(id)))
 		tmp.value = value;
 }
 
 function setCheck(id, value)
 {
-	var tmp;
-	var ret = false;
+	let tmp;
+	let ret = false;
 	if ((tmp = document.getElementById(id)))
 	{
 		if (tmp.checked != value)
@@ -185,12 +185,12 @@ function setCheck(id, value)
 
 function setOption(id, value)
 {
-	var tmp;
-	var ret = false;
+	let tmp;
+	let ret = false;
 	if ((tmp = document.getElementById(id)))
 	{
-		var oldIndex = tmp.selectedIndex;
-		for (var i=0; i<tmp.options.length; i++)
+		const oldIndex = tmp.selectedIndex;
+		for (let i=0; i<tmp.options.length; i++)
 		{
 			if (tmp.options[i].value == value)
 			{
@@ -212,7 +212,7 @@ function emptyOptions(ctrl)
 
 function addOptions(ctrl, text, value)
 {
-	var op = document.createElement("option");
+	const op = document.createElement("option");
 	op.text = text;
 	op.value = value;
 	ctrl.add(op);
@@ -220,21 +220,21 @@ function addOptions(ctrl, text, value)
 
 function prepareData(data, id, scale, name)
 {
-	var ctrl;
+	let ctrl;
 	if (ctrl = document.getElementById(id))
 	{
-		var value = parseFloat(ctrl.value);
-		var tmp = ctrl.getAttribute("min");
+		let value = parseFloat(ctrl.value);
+		let tmp = ctrl.getAttribute("min");
 		if (tmp)
 		{
-			var min = parseFloat(tmp);
+			let min = parseFloat(tmp);
 			if (value < min)
 				value = min;
 		}
 		tmp = ctrl.getAttribute("max");
 		if (tmp)
 		{
-			var max = parseFloat(tmp);
+			let max = parseFloat(tmp);
 			if (value > max)
 				value = max;
 		}
@@ -247,7 +247,7 @@ function prepareData(data, id, scale, name)
 
 function prepareDataFromComboBox(data, id, name)
 {
-	var ctrl;
+	let ctrl;
 	if (ctrl = document.getElementById(id))
 	{
 		if (ctrl.selectedIndex >= 0)
@@ -257,14 +257,14 @@ function prepareDataFromComboBox(data, id, name)
 
 function prepareDataFromCheckBox(data, id, name)
 {
-	var ctrl;
+	let ctrl;
 	if (ctrl = document.getElementById(id))
 		data.append(name != null && name != undefined ? name : id, ctrl.checked ? 1 : 0);
 }
 
 function prepareDataFromString(data, id, name)
 {
-	var ctrl;
+	let ctrl;
 	if (ctrl = document.getElementById(id))
 		data.append(name != null && name != undefined ? name : id, ctrl.value);
 }

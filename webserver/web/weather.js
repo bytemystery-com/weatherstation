@@ -26,63 +26,64 @@
  * Weather station - main script
 */
 
-const version = "v3.2";
+const version = "v3.3";
 
-var updateDataTimer = null;
-var updateDataTimerGraph = null;
-var updateIFrameTimer = null;
+let updateDataTimer = null;
+let updateDataTimerGraph = null;
+let updateIFrameTimer = null;
 
-var debug = 0;
+const debug = 0;
 
-var updateInterval = 5000;
-var updateIntervalGraph = 30000;
-var updateIntervalIFrame = 30*60*1000;
+let updateInterval = 5000;
+let updateIntervalGraph = 30000;
+let updateIntervalIFrame = 30*60*1000;
 
-var data_request = null;
-var data_request_graph = null;
-var file_request = null;
+let data_request = null;
+let data_request_graph = null;
+let file_request = null;
 
-var graphs = new Array();
+const pressure_trend_colors = [];
+const graphs = [];
 
-var graph_p = new SVGGraph("p_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
+const graph_p = new SVGGraph("p_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_p);
 
-var graph_p2 = new SVGGraph("p2_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
+const graph_p2 = new SVGGraph("p2_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_p2);
 
-var graph_t = new SVGGraph("t_", 0, 25, 0, 30, 24, 28, 1, 4, 1, 5, 70, 40, 20, 20);
+const graph_t = new SVGGraph("t_", 0, 25, 0, 30, 24, 28, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_t);
 
-var graph_t2 = new SVGGraph("t2_", 0, 25, 0, 30, 24, 28, 1, 4, 1, 5, 70, 40, 20, 20);
+const graph_t2 = new SVGGraph("t2_", 0, 25, 0, 30, 24, 28, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_t2);
 
-var graph_h = new SVGGraph("h_", 0, 25, 0, 102, 24, 100, 1, 4, 2, 10, 70, 40, 20, 20);
+const graph_h = new SVGGraph("h_", 0, 25, 0, 102, 24, 100, 1, 4, 2, 10, 70, 40, 20, 20);
 graphs.push(graph_h);
 
-var graph_h2 = new SVGGraph("h2_", 0, 25, 0, 102, 24, 100, 1, 4, 2, 10, 70, 40, 20, 20);
+const graph_h2 = new SVGGraph("h2_", 0, 25, 0, 102, 24, 100, 1, 4, 2, 10, 70, 40, 20, 20);
 graphs.push(graph_h2);
 
-var graph_d = new SVGGraph("d_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
+const graph_d = new SVGGraph("d_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
 graphs.push(graph_d);
 
-var graph_d2 = new SVGGraph("d2_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
+const graph_d2 = new SVGGraph("d2_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
 graphs.push(graph_d2);
 
-var graph_wb = new SVGGraph("wb_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
+const graph_wb = new SVGGraph("wb_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
 graphs.push(graph_wb);
 
-var graph_wb2 = new SVGGraph("wb2_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
+const graph_wb2 = new SVGGraph("wb2_", 0, 25, 0, 20, 24, 19, 1, 4, 0.25, 1, 70, 40, 20, 20);
 graphs.push(graph_wb2);
 
-var graph_l = new SVGGraph("l_", 0, 25, 0, 1000, 24, 980, 1, 4, 50, 250, 70, 40, 20, 20);
+const graph_l = new SVGGraph("l_", 0, 25, 0, 1000, 24, 980, 1, 4, 50, 250, 70, 40, 20, 20);
 graphs.push(graph_l);
 
-var graph_l2 = new SVGGraph("l2_", 0, 25, 0, 1000, 24, 980, 1, 4, 50, 250, 70, 40, 20, 20);
+const graph_l2 = new SVGGraph("l2_", 0, 25, 0, 1000, 24, 980, 1, 4, 50, 250, 70, 40, 20, 20);
 graphs.push(graph_l2);
 
 function getXAxisText(str, param)
 {
-	var h = parseInt(str);
+	let h = parseInt(str);
 	if (h >= 0)
 	{
 		return (param ==1 ? h%24 + ":0": pad(h%24, 2) + ":00");
@@ -97,15 +98,19 @@ function getXAxisText(str, param)
 
 function doLoad()
 {
-	var date = new Date();
-	var value = date.getFullYear() + "-" + pad(date.getMonth()+1, 2) + "-" + pad(date.getDate(), 2);
-	var tmp = document.getElementById("startdate");
-	if (tmp)
-		tmp.value = value;
-	tmp = document.getElementById("enddate");
-	if (tmp)
-		tmp.value = value;
-	
+	const date = new Date();
+	const value = date.getFullYear() + "-" + pad(date.getMonth()+1, 2) + "-" + pad(date.getDate(), 2);
+	const tmpStart = document.getElementById("startdate");
+	if (tmpStart)
+		tmpStart.value = value;
+	const tmpEnd = document.getElementById("enddate");
+	if (tmpEnd)
+		tmpEnd.value = value;
+
+	for (let i=0; i<5; i++){
+		pressure_trend_colors[i] = getCustomCssProperty(`--weather-pressure_trend_${i}`)
+	}
+
 	doStart();
 	doPeriodic();
 	doLoadFiles("");
@@ -186,7 +191,7 @@ function doStartGraph()
 
 function onClickActualData()
 {
-	var ctrl, tmp;
+	let ctrl, tmp;
 	if ((ctrl = document.getElementById("actualdate")))
 	{
 		if ((tmp = document.getElementById("startdate")))
@@ -265,11 +270,11 @@ function doPeriodic()
 		{
 			if (data_request.response)
 			{
-				var json = JSON.parse(data_request.response);
+				const json = JSON.parse(data_request.response);
 				// log(data_request.response);
 				if (json.config.update_interval !== undefined)
 				{
-					var interval = parseInt(json.config.update_interval);
+					const interval = parseInt(json.config.update_interval);
 					if (interval != updateInterval)
 					{
 						updateInterval = interval;
@@ -280,9 +285,9 @@ function doPeriodic()
 
 				if (json.status.time !== undefined)
 				{
-					var wday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-					var date_str = wday[json.status.time.wday] + ", " + (json.status.time.day < 10 ? "0" : "") + json.status.time.day + "." + (json.status.time.month < 10 ? "0" : "") + json.status.time.month + "." + json.status.time.year;
-					var time_str = (json.status.time.hour < 10 ? "0" : "") + json.status.time.hour + ":" + (json.status.time.min < 10 ? "0" : "") + json.status.time.min + ":" + (json.status.time.sec < 10 ? "0" : "") + json.status.time.sec;
+					const wday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+					const date_str = wday[json.status.time.wday] + ", " + (json.status.time.day < 10 ? "0" : "") + json.status.time.day + "." + (json.status.time.month < 10 ? "0" : "") + json.status.time.month + "." + json.status.time.year;
+					const time_str = (json.status.time.hour < 10 ? "0" : "") + json.status.time.hour + ":" + (json.status.time.min < 10 ? "0" : "") + json.status.time.min + ":" + (json.status.time.sec < 10 ? "0" : "") + json.status.time.sec;
 					if ((tmp = document.getElementById("status_date")))
 						tmp.textContent = date_str;
 					if ((tmp = document.getElementById("sysstat_date")))
@@ -342,16 +347,18 @@ function doPeriodic()
 					const val = json.status.pressure_trend_3.toFixed(2);
 					tmp.textContent = val + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
 					const diff = Math.abs(val);
+					let colIndex = 0;
 					if (diff < 0.5)
-						tmp.style.backgroundColor = "";
+						colIndex = 0;
 					else if (diff < 1.0)
-						tmp.style.backgroundColor = "#cefdc4";
+						colIndex = 1;
 					else if (diff < 1.5)
-						tmp.style.backgroundColor = "#fbf598";
+						colIndex = 2;
 					else if (diff < 2.0)
-						tmp.style.backgroundColor = "#ffc4b6";
+						colIndex = 3;
 					else
-						tmp.style.backgroundColor = "#eac0fd";
+						colIndex = 4;
+					tmp.style.backgroundColor = pressure_trend_colors[Math.min(colIndex, pressure_trend_colors.length - 1)];
 				}
 				if (tmp = document.getElementById("summary_wetbulb"))
 					tmp.textContent = json.status.wet_bulb.toFixed(1) + " °C";
@@ -435,7 +442,7 @@ function doPeriodic()
 
 function pad(num, size)
 {
-    var s = num + "";
+    let s = num + "";
     while (s.length < size)
 		s = "0" + s;
     return s;
@@ -446,15 +453,14 @@ function doPeriodicGraph()
 	if (data_request_graph == null)
 	{
 		data_request_graph = new XMLHttpRequest();
-		var now = new Date();
-		var svgWidth = 0;
-		var timeRaster = 4;
-		var timeRaster_fine = 1;
-		var userParam = 0;
-		var yScaleTextOffset = "1.4em";
+		const now = new Date();
+		let timeRaster = 4;
+		let timeRaster_fine = 1;
+		let userParam = 0;
+		let yScaleTextOffset = "1.4em";
 		if (tmp = document.getElementById("p_svg"))
 		{
-			svgWidth = tmp.getBoundingClientRect().width;
+			const svgWidth = tmp.getBoundingClientRect().width;
 			// log("SVG-Size: " + svgWidth);
 			if (svgWidth < 350)
 			{
@@ -482,9 +488,9 @@ function doPeriodicGraph()
 			graph.yScaleTextOffset = yScaleTextOffset;
 		});
 		
-		var useActualData = true;
-		var ctrl, startDateCtrl = null, endDateCtrl = null;
-		var startDateArray, endDateArray;
+		let useActualData = true;
+		let ctrl, startDateCtrl = null, endDateCtrl = null;
+		let startDateArray, endDateArray;
 		if ((ctrl = document.getElementById("actualdate")))
 		{
 			startDateCtrl = document.getElementById("startdate");
@@ -528,7 +534,7 @@ function doPeriodicGraph()
 				{
 					if (json.config.sd_interval !== undefined)
 					{
-						var interval = parseInt(json.config.sd_interval);
+						const interval = parseInt(json.config.sd_interval);
 						if (interval != updateIntervalGraph)
 						{
 							updateIntervalGraph = interval;
@@ -553,7 +559,7 @@ function doPeriodicGraph()
 						endDate = new Date(endDateArray[0], endDateArray[1] - 1, endDateArray[2], 0, 0, 0);
 						tmpDate = endDate;
 					
-						var diff = (endDate - startDate) / 3600000;
+						const diff = (endDate - startDate) / 3600000;
 						if (diff > 36)
 						{
 							timeRaster = (parseInt(parseInt(diff / 10) / 4) + 1)*4;
@@ -592,17 +598,17 @@ function doPeriodicGraph()
 					// log("Duration: " + duration);
 					graphs.forEach(function(graph)
 					{
-						var xArray = new Array();
-						var yArray = new Array();
-						var minY = null;
-						var maxY = null;
+						const xArray = [];
+						const yArray = [];
+						let minY = null;
+						let maxY = null;
 						json.data.forEach(function(item)
 						{
 							// log(item);
-							var date = new Date(item.ti_y, item.ti_m - 1, item.ti_d, item.ti_h, item.ti_mi, item.ti_s);
-							var diff = (date - tmpDate)  / 3600000.0;
+							const date = new Date(item.ti_y, item.ti_m - 1, item.ti_d, item.ti_h, item.ti_mi, item.ti_s);
+							const diff = (date - tmpDate)  / 3600000.0;
 							
-							var y = null;
+							let y = null;
 							if (graph == graph_p)
 							{
 								y = parseFloat(item.pn);
@@ -737,17 +743,15 @@ function doLoadFiles(start_dir)
 		{
 			if (file_request.response)
 			{
-				var json = JSON.parse(file_request.response);
+				const json = JSON.parse(file_request.response);
 				log(file_request.response);
 				if (tmp = document.getElementById("files"))
 				{
 					while (tmp.firstChild)
 						tmp.removeChild(tmp.firstChild);
-					var index;
-					var item;
-					for (index=0; index < json.dirs.length; index++)
+					for (let index=0; index < json.dirs.length; index++)
 					{
-						item = document.createElement("a");
+						const item = document.createElement("a");
 						item.setAttribute("class", "dir");
 						// item.setAttribute("href", "");
 						item.setAttribute("onclick", "doLoadFiles(\"" + json.path + "/" + json.dirs[index].name + "\")");
@@ -755,9 +759,9 @@ function doLoadFiles(start_dir)
 						tmp.appendChild(item);
 						tmp.appendChild(document.createElement("br"));
 					}
-					for (index=0; index < json.files.length; index++)
+					for (let index=0; index < json.files.length; index++)
 					{
-						item = document.createElement("a");
+						const item = document.createElement("a");
 						item.setAttribute("class", "file");
 						item.setAttribute("href", "getsd?file=" + json.path + "/" + json.files[index].name);
 						if (!json.files[index].name.toLowerCase().endsWith(".png"))
@@ -777,10 +781,10 @@ function doLoadFiles(start_dir)
 
 function doUpdate()
 {
-	var tmp = document.getElementById("update_file_upload");
+	const tmp = document.getElementById("update_file_upload");
 	if (tmp)
 	{
-		var request = new XMLHttpRequest();
+		const request = new XMLHttpRequest();
 		request.open("POST", "firmwareupdate", true);
 		noCacheInRequest(request);
 		request.responseType = "text";
@@ -790,7 +794,7 @@ function doUpdate()
 			window.location.href = "update.html"
 		}
 			
-		var data = new FormData();
+		const data = new FormData();
 		data.append("firmwarefile", tmp.files[0])
 		document.body.style.cursor = "wait";
 		request.send(data);
@@ -812,7 +816,7 @@ function log(msg)
 
 function doUpdateIFrames()
 {
-	var iframe = document.querySelector('.weather_iframe');
+	const iframe = document.querySelector('.weather_iframe');
 		if (iframe) {
 		iframe.src = iframe.src;
 	}
@@ -820,4 +824,8 @@ function doUpdateIFrames()
 		if (iframe) {
 			iframe.src = iframe.src;
 	}
+}
+
+function getCustomCssProperty(name) {
+	return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }

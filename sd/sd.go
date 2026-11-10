@@ -41,8 +41,8 @@ import (
 )
 
 const (
-	// DT;T;T2;H;H2;DP;DP2;P;PN;P2;PN2;T;T2;L;L2;WB;WB2;ESHT;EBMH;EVEML
-	DATA_HEADERLINE = "# Weather station - %s\r\n# Version: %s\r\nDate Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %%] (SHT);Humidity2 [rel %%] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Wet bulb [°C];Wet bulb2 [°C];Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
+	// DT;T;T2;H;H2;DP;DP2;P;PN;P2;PN2;T;T2;L;L2;WB;WB2;PT3;PT1;ESHT;EBMH;EVEML
+	DATA_HEADERLINE = "# Weather station - %s\r\n# Version: %s\r\nDate Time;Temp [°C] (SHT);Temp2 [°C] (SHT);Humidity [rel %%] (SHT);Humidity2 [rel %%] (SHT);Dew point [°C] (SHT);Dew point2 [°C] (SHT);Pressure [hPa] (BMH);Pressure normal height [hPa] (BMH);Pressure2 [hPa] (BMH);Pressure normal height 2 [hPa] (BMH);Temp [°C] (BMH);Temp2 [°C] (BMH);Light [Lx] (VEML);Light2 [Lx] (VEML);Wet bulb [°C];Wet bulb2 [°C];Pressure trend 3 [hPa/h];Pressure trend 1 [hPa/h];Errors (SHT);Errors (BMH);Errors (VEML)\r\n"
 )
 
 type SdData struct {
@@ -67,6 +67,8 @@ type SdDataEntry struct {
 	L_2  float32
 	WB_1 float32
 	WB_2 float32
+	PT1  float32
+	PT3  float32
 	E_1  uint32
 	E_2  uint32
 	E_3  uint32
@@ -95,9 +97,9 @@ func (sd *SdData) writeHeader(file string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(file, []byte(fmt.Sprintf(DATA_HEADERLINE,
+	return os.WriteFile(file, fmt.Appendf(nil, DATA_HEADERLINE,
 		sd.config.GetStringValue(cfg.SECTION_GENERAL, cfg.KEY_GENERAL_NAME, cfg.DEF_NAME),
-		cfg.WEATHER_STATION_VERSION)), 0o644)
+		cfg.WEATHER_STATION_VERSION), 0o644)
 }
 
 func (sd *SdData) WriteEntry(data *SdDataEntry) error {
@@ -119,10 +121,10 @@ func (sd *SdData) writeEntryInternal(file string, data *SdDataEntry, now *time.T
 	}
 	defer f.Close()
 
-	line := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%d\r\n",
+	line := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.2f;%.2f%d;%d;%d\r\n",
 		now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(),
 		data.T1_1, data.T1_2, data.H_1, data.H_2, data.Dp_1, data.Dp_2, data.P_1, data.Pn_1, data.P_2, data.Pn_2,
-		data.T2_1, data.T2_2, data.L_1, data.L_2, data.WB_1, data.WB_2, data.E_1, data.E_2, data.E_3)
+		data.T2_1, data.T2_2, data.L_1, data.L_2, data.WB_1, data.WB_2, data.PT3, data.PT1, data.E_1, data.E_2, data.E_3)
 
 	_, err = f.WriteString(line)
 	return err
@@ -263,6 +265,8 @@ type csvEntry struct {
 	L2    float32 `json:"l2"`
 	WB    float32 `json:"wb"`
 	WB2   float32 `json:"wb2"`
+	PT1   float32 `json:"pt1"`
+	PT3   float32 `json:"pt3"`
 }
 
 type csvData struct {
@@ -331,7 +335,16 @@ func (sd *SdData) ReadCsv(path string, start time.Time, end time.Time, entries *
 			entry.P2 = entry.P
 			entry.Pn2 = entry.Pn
 		} else {
-			if version >= 0x0300 {
+			if version >= 0x0305 {
+				n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
+					&year, &month, &day, &hour, &min, &sec,
+					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
+					&entry.P, &entry.Pn, &entry.P2, &entry.Pn2, &dummy, &dummy, &entry.L, &entry.L2,
+					&entry.WB, &entry.WB2, &entry.PT3, &entry.PT1, &dummy, &dummy, &dummy)
+				if err != nil || n != 27 {
+					continue
+				}
+			} else if version >= 0x0300 {
 				n, err := fmt.Sscanf(line, "%d-%d-%d %d:%d:%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
 					&year, &month, &day, &hour, &min, &sec,
 					&entry.T, &entry.T2, &entry.H, &entry.H2, &entry.DP, &entry.DP2,
