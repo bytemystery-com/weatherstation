@@ -11,9 +11,9 @@ set -eo pipefail
 
 function cleanup()
 {
-	sudo umount ${LOOP}p1 || true
-	sudo umount ${LOOP}p2 || true
-	sudo losetup -d ${LOOP} || true
+	sudo umount ${LOOP}p1 2>/dev/null || true
+	sudo umount ${LOOP}p2 2>/dev/null || true
+	sudo losetup -d ${LOOP} 2>/dev/null || true
 }
 
 trap cleanup EXIT
@@ -27,7 +27,7 @@ sudo mount ${LOOP}p1 "${ROOT_FOLDER}/${RSYNC_MOUNT}/boot/firmware"
 sudo rsync -av --delete --numeric-ids --exclude={'/dev/*','/proc/*','/sys/*','/tmp/*','/run/*','/mnt/*','/media/*','/lost+found'} root@${IP}:/ "${ROOT_FOLDER}/${RSYNC_MOUNT}"
 cleanup
 sudo rm -f "${ROOT_FOLDER}/${IMG_NAME}.xz" || true
-sudo ${PISHRINK} -rZ "${ROOT_FOLDER}/${RSYNC_IMG}" "${ROOT_FOLDER}/${IMG_NAME}.xz"
+sudo ${PISHRINK} -raZ "${ROOT_FOLDER}/${RSYNC_IMG}" "${ROOT_FOLDER}/${IMG_NAME}.xz"
 
 
 
