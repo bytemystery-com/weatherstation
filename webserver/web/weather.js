@@ -338,8 +338,22 @@ function doPeriodic()
 					tmp.textContent = json.sensors[0].pressure.toFixed(1) + " / " + json.sensors[0].pressure_normal.toFixed(1) + " hPa";
 				if (tmp = document.getElementById("summary_pressure2"))
 					tmp.textContent = json.sensors[0].pressure2.toFixed(1) + " / " + json.sensors[0].pressure2_normal.toFixed(1) + " hPa";
-				if (tmp = document.getElementById("summary_pressure_trend"))
-					tmp.textContent = json.status.pressure_trend_3.toFixed(2) + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
+				if (tmp = document.getElementById("summary_pressure_trend_31")) {
+					const val = json.status.pressure_trend_3.toFixed(2);
+					tmp.textContent = val + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
+					let diff = Math.abs(val);
+					diff = 0.8;
+					if (diff < 0.5)
+						tmp.style.backgroundColor = "";
+					else if (diff < 1.0)
+						tmp.style.backgroundColor = "#cefdc4";
+					else if (diff < 1.5)
+						tmp.style.backgroundColor = "#fbf598";
+					else if (diff < 2.0)
+						tmp.style.backgroundColor = "#ffc4b6";
+					else
+						tmp.style.backgroundColor = "#eac0fd";
+				}
 				if (tmp = document.getElementById("summary_wetbulb"))
 					tmp.textContent = json.status.wet_bulb.toFixed(1) + " °C";
 				if (tmp = document.getElementById("summary_wetbulb2"))
