@@ -1,6 +1,6 @@
 module weatherd
 
-go 1.27.2
+go 1.27.4
 
 require (
 	github.com/bytemystery-com/i2c v1.0.1

@@ -6,6 +6,8 @@ go fmt ./...
 go vet ./... 
 go get -u ./... # ???   
 go mod tidy
+go install github.com/chimanjain/gomajor/cmd/gomajor@latest
+~/go/bin/gomajor list -a
 if [[ ${CLEAN} -eq 1 ]] ; then
     go clean -cache -modcache
 fi
