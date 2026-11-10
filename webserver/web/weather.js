@@ -341,8 +341,7 @@ function doPeriodic()
 				if (tmp = document.getElementById("summary_pressure_trend_31")) {
 					const val = json.status.pressure_trend_3.toFixed(2);
 					tmp.textContent = val + " / " + json.status.pressure_trend_1.toFixed(2) + " hPa/h";
-					let diff = Math.abs(val);
-					diff = 0.8;
+					const diff = Math.abs(val);
 					if (diff < 0.5)
 						tmp.style.backgroundColor = "";
 					else if (diff < 1.0)
