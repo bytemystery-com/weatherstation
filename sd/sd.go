@@ -113,7 +113,10 @@ func (sd *SdData) writeEntryInternal(file string, data *SdDataEntry, now *time.T
 		return err
 	}
 	if !ok {
-		sd.writeHeader(file)
+		err = sd.writeHeader(file)
+		if err != nil {
+			return err
+		}
 	}
 	f, err := os.OpenFile(file, os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
@@ -121,7 +124,7 @@ func (sd *SdData) writeEntryInternal(file string, data *SdDataEntry, now *time.T
 	}
 	defer f.Close()
 
-	line := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.2f;%.2f%d;%d;%d\r\n",
+	line := fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.2f;%.2f;%d;%d;%d\r\n",
 		now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(),
 		data.T1_1, data.T1_2, data.H_1, data.H_2, data.Dp_1, data.Dp_2, data.P_1, data.Pn_1, data.P_2, data.Pn_2,
 		data.T2_1, data.T2_2, data.L_1, data.L_2, data.WB_1, data.WB_2, data.PT3, data.PT1, data.E_1, data.E_2, data.E_3)

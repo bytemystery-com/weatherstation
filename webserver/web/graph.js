@@ -67,6 +67,12 @@ function SVGGraph(prefix, minXScale, maxXScale, minYScale, maxYScale, maxXValue,
 	this.getYAxisText = null;
 	this.userParam = null;
 	this.yScaleTextOffset = "1.3em";
+	this.YStepFactor = 1;
+	if (this.stepY_bold < 1.0) {
+		const nachkommastellen = (this.stepY_bold.toString().split('.')[1] || '').length;
+		this.YStepFactor = Math.pow(10, nachkommastellen);
+	}
+
 }
 
 SVGGraph.prototype.getTransformParam = function()
@@ -267,14 +273,24 @@ SVGGraph.prototype.createYGrid = function()
 		line.setAttribute("style", "stroke-width:" + (-this.sw_gridLineBold / this.transform.scaleY) + "px;");
 	g2.appendChild(line);
 
-	for (var i=this.stepY; i<=(this.maxYValue - this.minYScale); i+=this.stepY)
+	for (var i=0; i<=(this.maxYValue - this.minYScale); i+=this.stepY)
 	{
 		line = document.createElementNS(this.svgNameSpace, "line");
 		line.setAttribute("id", this.prefix + "gridline_y_" + i);
 		line.setAttribute("y1", i);
 		line.setAttribute("y2", i);
 		line.setAttribute("x2", (this.maxXValue - this.minXScale));
-		if (i % this.stepY_bold == 0)
+		let isBold = false
+		if (this.YStepFactor == 1)  {
+			isBold = (i % this.stepY_bold == 0)
+		} else {
+			const iInt = Math.round(i * this.YStepFactor);
+			const stepInt = Math.round(this.stepY_bold * this.YStepFactor);
+			if (iInt % stepInt === 0) {
+				isBold = true;
+			}
+		}
+		if (isBold)
 		{
 			line.setAttribute("x1", -gridLineXOffset / this.transform.scaleX);
 			line.setAttribute("class", "line gridline gridline_bold");
@@ -286,7 +302,11 @@ SVGGraph.prototype.createYGrid = function()
 			text.setAttribute("y", i * this.transform.scaleY + this.transform.transY);
 			text.setAttribute("dy", "0.3em");
 			text.setAttribute("class", "gridtext gridtext_y");
-			text.textContent = (this.getYAxisText ? this.getYAxisText(i + this.minYScale, this.userParam) : i + this.minYScale);
+			let txt = i + this.minYScale
+			if (this.stepY_bold < 1.0) {
+				txt = (Math.round(txt*this.YStepFactor)/this.YStepFactor).toFixed(1);
+			}
+			text.textContent = (this.getYAxisText ? this.getYAxisText(txt, this.userParam) : txt);
 			gridY.appendChild(text);
 		}
 		else

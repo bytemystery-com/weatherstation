@@ -51,6 +51,10 @@ graphs.push(graph_p);
 const graph_p2 = new SVGGraph("p2_", 0, 25, 940, 980, 24, 980, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_p2);
 
+// prefix, minXScale, maxXScale, minYScale, maxYScale, maxXValue, maxYValue, stepX, stepX_bold, stepY, stepY_bold, leftMargin, bottomMargin, rightMargin, topMargin)
+const graph_pt3 = new SVGGraph("pt3_", 0, 25, -2.0, 2.0, 24, 2.0, 1, 4, 0.1, 0.5, 70, 40, 20, 20);
+graphs.push(graph_pt3);
+
 const graph_t = new SVGGraph("t_", 0, 25, 0, 30, 24, 28, 1, 4, 1, 5, 70, 40, 20, 20);
 graphs.push(graph_t);
 
@@ -133,6 +137,7 @@ function doLoadGraph()
 
 	graph_p.yScaleText = "Pressure [hPa]";
 	graph_p2.yScaleText = "Pressure (long) [hPa]";
+	graph_pt3.yScaleText = "Pressure Trend 3h [hPa/h]";
 	graph_t.yScaleText = "Temperature [°C]";
 	graph_t2.yScaleText = "Temperature (long) [°C]";
 	graph_h.yScaleText = "Humidity [% rel]";
@@ -621,8 +626,15 @@ function doPeriodicGraph()
 								if (y < 960)
 									y = null;
 							}
+							else if (graph == graph_pt3)
+							{
+								if (item.pt3 !== undefined)
+									y = parseFloat(item.pt3);
+							}
 							else if (graph == graph_t)
+							{
 								y = parseFloat(item.t);
+							}
 							else if (graph == graph_t2)
 							{
 								if (item.t2 !== undefined)
@@ -695,10 +707,15 @@ function doPeriodicGraph()
 							{
 								graph.stepY_bold = 250;
 								graph.stepY = 50;
-								
 							}
 						}
-						
+						/*
+						if (graph == graph_pt3)
+						{
+							maxY = 2.0;
+							minY = -2.0;
+						}
+							*/
 						// log("Graph=" + graph + " MinY=" + minY + " MaxY=" + maxY); 
 						graph.maxYScale = (parseInt(maxY / graph.stepY_bold) + 1) * graph.stepY_bold + 2.0 * graph.stepY;
 						graph.minYScale = parseInt(minY / graph.stepY_bold) * graph.stepY_bold;
