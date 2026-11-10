@@ -266,6 +266,7 @@ func GetRompsWetBulb(tC, rhPct, pPa float64) (float64, error) {
 // returns a0, a1, and goodness
 // http://elsenaju.info/Rechnen/Ausgleichsgerade.htm
 // y = a1*x + a0
+// Goodness is Neyman-Chi-Quadrat based
 func CalculateRegression(x, y []float64) (a1, a0, goodness float64) {
 	n := len(x)
 	if n == 0 || len(y) != n {
