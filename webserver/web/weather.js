@@ -381,7 +381,7 @@ function doPeriodic()
 				if (json.status.raspi !== undefined)
 				{
 					if (tmp = document.getElementById("sysstat_fan"))
-						tmp.textContent = json.status.raspi >= 0 ? json.status.raspi.fan + " rpm" : "---";
+						tmp.textContent = json.status.raspi.fan >= 0 ? json.status.raspi.fan + " rpm" : "---";
 					if (tmp = document.getElementById("sysstat_cpu"))
 						tmp.textContent = (json.status.raspi.cpu/10.0).toFixed(1) + " %";
 					if (tmp = document.getElementById("sysstat_cpu_freq"))
